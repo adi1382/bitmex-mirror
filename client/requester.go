@@ -1,9 +1,8 @@
-package rest
+package client
 
-type requester interface {
+type Requester interface {
 	Path() string
 	Method() string
 	Query() string
 	Payload() string
-	isSigned() bool
 }

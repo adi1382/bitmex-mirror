@@ -12,6 +12,9 @@ github.com/juju/ratelimit
 github.com/klauspost/compress/flate
 github.com/klauspost/compress/gzip
 github.com/klauspost/compress/zlib
+# github.com/pkg/errors v0.9.1
+## explicit
+github.com/pkg/errors
 # github.com/valyala/bytebufferpool v1.0.0
 ## explicit
 github.com/valyala/bytebufferpool
@@ -22,7 +25,5 @@ github.com/valyala/fasthttp/fasthttputil
 github.com/valyala/fasthttp/stackless
 # github.com/zmxv/bitmexgo v0.0.0-20190804192702-ee6830406f7e
 ## explicit
-github.com/zmxv/bitmexgo
-github.com/zmxv/bitmexgo/optional
 # gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 ## explicit; go 1.11

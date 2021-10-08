@@ -50,7 +50,7 @@ type ReqToGetOrders struct {
 	Columns   string            `url:"columns,omitempty"`
 	Count     int               `url:"count,omitempty"`
 	Start     int               `url:"start,omitempty"`
-	Reverse   bool              `url:"reverse,omitempty"`
+	Reverse   bool              `url:"reverse"`
 	StartTime time.Time         `url:"startTime,omitempty"`
 	EndTime   time.Time         `url:"endTime,omitempty"`
 }
@@ -72,8 +72,4 @@ func (req *ReqToGetOrders) Query() string {
 
 func (req *ReqToGetOrders) Payload() string {
 	return ""
-}
-
-func (req *ReqToGetOrders) IsSigned() bool {
-	return true
 }
