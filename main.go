@@ -2,38 +2,114 @@ package main
 
 import (
 	"fmt"
-	"github.com/bitmex-mirror/position"
 	"github.com/bitmex-mirror/rest"
 	"os"
 )
 
 func main() {
 	r := rest.NewRestObject()
+	//a := client.NewRequestToGetOrders().symbol("XBTUSD")
+	//fmt.Println(a.path())
+	//os.Exit(-1)
 
 	c := r.AddNewClient("pkOAYJNujj_-cW3gN0FjPizp", "LgiVEp09S4TFw9FfoMuurP-7lVJ6DPfbCRHWhomkqn7qx-F4", true)
+
+	getOrders, err := c.GetOrdersRequest().Symbol("XBTUSD").Reverse(true).Count(2).Do()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(getOrders)
+
+	order := c.AmendOrderRequest().OrderID((*getOrders)[0].OrderID).Price(34000)
+	order2 := c.AmendOrderRequest().OrderID((*getOrders)[1].OrderID).Price(30000)
+
+	bulkOrders, err := c.AmendBulkOrdersRequest().AddAmendedOrder(order, order2).Do()
+	if err != nil {
+		return
+	}
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(bulkOrders)
+
+	//after, err := c.CancelAllAfterRequest().Timeout(15).Do()
+	//if err != nil {
+	//	panic(err)
+	//}
+	//fmt.Println(after)
+
+	os.Exit(-1)
+	//fmt.Println(c)
+
+	//orders, err := c.GetOrdersRequest().Symbol("XBTUSD").Start(0).
+	//	StartTime(time.Now().UTC().Add(-5*time.Hour)).
+	//	AddFilter("open", true).Columns("orderQty", "price").Do()
+	//if err != nil {
+	//	panic(err)
+	//}
+	//fmt.Println("________")
+	//fmt.Println(orders)
+	o1 := c.PlaceOrderRequest().Symbol("XBTUSD").Price(35000).OrderQty(100)
+	o2 := c.PlaceOrderRequest().Symbol("XBTUSD").Price(70000).OrderQty(-300)
+
+	fmt.Println(o1, o2)
+
+	orders, err := c.PlaceBulkOrdersRequest().AddOrders(o1, o2).Do()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(orders)
+
+	os.Exit(1)
+
+	do, err := c.CancelAllOrdersRequest().Do()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(do)
+
+	//do, err := c.CancelOrdersRequest().AddOrderIDs("beaa1f75-1e70-4d0b-ada7-f6e74762e0b7", "06b0de7a-ab5a-460b-91e3-33fbad407a42").Do()
+	//if err != nil {
+	//	return
+	//}
+	//
+	//fmt.Println(do)
+
+	os.Exit(-1)
+
+	//fmt.Println(orders.Payload())
+	//if err != nil {
+	//	return
+	//}
+	//
+	//fmt.Println(orders)
 
 	//c.CancelAllAfter(&order.ReqToCancelAllAfter{Timeout: 60000})
 
 	//allOrders, err := c.CancelAllOrders(&order.ReqToCancelAllOrders{
-	//	Symbol: "XBTUSD",
-	//	Filter: map[string]interface{}{"side": "Buy"},
+	//	symbol: "XBTUSD",
+	//	filter: map[string]interface{}{"side": "Buy"},
 	//})
 	//if err != nil {
 	//	panic(err)
 	//}
+	//
+	//leverage, err := c.ChangeLeverage(&position.ReqToChangeLeverage{
+	//	symbol:   "XBTUSD",
+	//	Leverage: 0,
+	//})
+	//if err != nil {
+	//	panic(err)
+	//}
+	//fmt.Println(leverage)
+	//os.Exit(0)
 
-	leverage, err := c.ChangeLeverage(&position.ReqToChangeLeverage{
-		Symbol:   "XBTUSD",
-		Leverage: 0,
-	})
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(leverage)
-	os.Exit(0)
-
-	//c.GetOrders(&order.ReqToGetOrders{
-	//	Symbol:  "XBTUSD",
+	//c.GetOrders(&order.reqToGetOrders{
+	//	symbol:  "XBTUSD",
 	//	Reverse: true,
 	//	Count:   2,
 	//})
@@ -65,14 +141,14 @@ func main() {
 	//var bulkOrder order.ReqToPlaceBulkOrder
 	//
 	//ord1 := order.ReqToPlaceOrder{
-	//	Symbol:   "XBTUSD",
+	//	symbol:   "XBTUSD",
 	//	Side:     "Buy",
 	//	OrderQty: 100,
 	//	Price:    30000,
 	//}
 	//
 	//ord2 := order.ReqToPlaceOrder{
-	//	Symbol:   "XBTUSD",
+	//	symbol:   "XBTUSD",
 	//	Side:     "Buy",
 	//	OrderQty: 100,
 	//	Price:    35000,
@@ -106,7 +182,7 @@ func main() {
 //
 //	var params bitmexgo.OrderGetOrdersOpts
 //
-//	params.Symbol.Set("XBTUSD")
+//	params.symbol.Set("XBTUSD")
 //	params.Reverse.Set(true)
 //	params.Count.Set(1)
 //

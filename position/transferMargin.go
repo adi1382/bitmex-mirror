@@ -13,19 +13,19 @@ type ReqToTransferMargin struct {
 
 type RespToTransferMargin Position
 
-func (req *ReqToTransferMargin) Path() string {
+func (req *ReqToTransferMargin) path() string {
 	return fmt.Sprintf("/position/transferMargin")
 }
 
-func (req *ReqToTransferMargin) Method() string {
+func (req *ReqToTransferMargin) method() string {
 	return http.MethodPost
 }
 
-func (req *ReqToTransferMargin) Query() string {
+func (req *ReqToTransferMargin) query() string {
 	return ""
 }
 
-func (req *ReqToTransferMargin) Payload() string {
+func (req *ReqToTransferMargin) payload() string {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return ""

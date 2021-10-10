@@ -13,7 +13,7 @@ type ReqToChangeLeverage struct {
 
 type RespToChangeLeverage Position
 
-func (req *ReqToChangeLeverage) Path() string {
+func (req *ReqToChangeLeverage) path() string {
 	return fmt.Sprintf("/position/leverage")
 }
 

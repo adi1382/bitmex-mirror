@@ -13,7 +13,7 @@ type ReqToIsolateMargin struct {
 
 type RespToIsolateMargin Position
 
-func (req *ReqToIsolateMargin) Path() string {
+func (req *ReqToIsolateMargin) path() string {
 	return fmt.Sprintf("/position/isolate")
 }
 

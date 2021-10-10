@@ -32,14 +32,17 @@ func (c *Client) request(req Requester, results interface{}) error {
 func (c *Client) newRequest(r Requester) *fasthttp.Request {
 	// avoid Pointer's butting
 	u, _ := url.ParseRequestURI(c.auth.Endpoint)
-	u.Path = u.Path + r.Path()
-	u.RawQuery = r.Query()
+	u.Path = u.Path + r.path()
+	u.RawQuery = r.query()
 
 	req := fasthttp.AcquireRequest()
-	req.Header.SetMethod(r.Method())
+	req.Header.SetMethod(r.method())
 	req.SetRequestURI(u.String())
-	body := r.Payload()
+	body := r.payload()
 	req.SetBody([]byte(body))
+	//fmt.Println("********")
+	//fmt.Println(r.payload())
+	//fmt.Println(r.query())
 
 	apiExpires := strconv.FormatInt(time.Now().Add(time.Second*60).Unix(), 10)
 	req.Header.Set("Api-Expires", apiExpires)
@@ -55,6 +58,9 @@ func (c *Client) newRequest(r Requester) *fasthttp.Request {
 func (c *Client) do(r Requester) (*fasthttp.Response, error) {
 	req := c.newRequest(r)
 	res := fasthttp.AcquireResponse()
+
+	fmt.Println("Request")
+	fmt.Println(req)
 
 	err := c.httpC.DoTimeout(req, res, time.Second*5)
 	if err != nil {
@@ -89,13 +95,13 @@ func decode(res *fasthttp.Response, out interface{}) error {
 }
 
 func (c *Client) PrepareSignature(r Requester, apiExpires string) string {
-	signatureBody := r.Method() + "/api/v1" + r.Path()
+	signatureBody := r.method() + "/api/v1" + r.path()
 
-	if r.Query() != "" {
-		signatureBody += "?" + r.Query()
+	if r.query() != "" {
+		signatureBody += "?" + r.query()
 	}
 
-	signatureBody += apiExpires + r.Payload()
+	signatureBody += apiExpires + r.payload()
 
 	return c.auth.Sign(signatureBody)
 }

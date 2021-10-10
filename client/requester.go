@@ -1,8 +1,8 @@
 package client
 
 type Requester interface {
-	Path() string
-	Method() string
-	Query() string
-	Payload() string
+	path() string
+	method() string
+	query() string
+	payload() string
 }

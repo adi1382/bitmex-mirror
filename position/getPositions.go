@@ -109,7 +109,7 @@ type ReqToGetPositions struct {
 
 type RespToGetPositions []Position
 
-func (req *ReqToGetPositions) Path() string {
+func (req *ReqToGetPositions) path() string {
 	return fmt.Sprintf("/position")
 }
 

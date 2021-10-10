@@ -13,19 +13,19 @@ type ReqToChangeRiskLimit struct {
 
 type RespToChangeRiskLimit Position
 
-func (req *ReqToChangeRiskLimit) Path() string {
+func (req *ReqToChangeRiskLimit) path() string {
 	return fmt.Sprintf("/position/riskLimit")
 }
 
-func (req *ReqToChangeRiskLimit) Method() string {
+func (req *ReqToChangeRiskLimit) method() string {
 	return http.MethodPost
 }
 
-func (req *ReqToChangeRiskLimit) Query() string {
+func (req *ReqToChangeRiskLimit) query() string {
 	return ""
 }
 
-func (req *ReqToChangeRiskLimit) Payload() string {
+func (req *ReqToChangeRiskLimit) payload() string {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return ""
