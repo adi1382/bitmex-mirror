@@ -4,19 +4,48 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="49da39b7-0b12-4d57-9177-87db4699a4db" name="Changes" comment="rest">
+    <list default="true" id="49da39b7-0b12-4d57-9177-87db4699a4db" name="Changes" comment="order complete">
+      <change afterPath="$PROJECT_DIR$/optional/bool.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/optional/float64.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/optional/int.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/optional/optional.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/optional/string.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/.godocdown.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/.travis.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/LICENSE" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/Makefile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/bool_generated.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/byte_generated.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/complex128_generated.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/complex64_generated.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/doc.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/float32_generated.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/float64_generated.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/int16_generated.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/int32_generated.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/int64_generated.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/int8_generated.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/int_generated.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/rune_generated.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/string_generated.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/time_generated.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/types.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/uint16_generated.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/uint32_generated.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/uint64_generated.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/uint8_generated.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/uint_generated.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/4d63.com/optional/uintptr_generated.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/auth/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/auth/auth.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/client.go" beforeDir="false" afterPath="$PROJECT_DIR$/client/client.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/order.go" beforeDir="false" afterPath="$PROJECT_DIR$/client/order.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/position.go" beforeDir="false" afterPath="$PROJECT_DIR$/client/position.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/request.go" beforeDir="false" afterPath="$PROJECT_DIR$/client/request.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/requester.go" beforeDir="false" afterPath="$PROJECT_DIR$/client/requester.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/order/getOrders.go" beforeDir="false" afterPath="$PROJECT_DIR$/order/getOrders.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/position/changeLeverage.go" beforeDir="false" afterPath="$PROJECT_DIR$/position/changeLeverage.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/position/changeRiskLimit.go" beforeDir="false" afterPath="$PROJECT_DIR$/position/changeRiskLimit.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/position/getPositions.go" beforeDir="false" afterPath="$PROJECT_DIR$/position/getPositions.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/position/isolateMargin.go" beforeDir="false" afterPath="$PROJECT_DIR$/position/isolateMargin.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/position/transferMargin.go" beforeDir="false" afterPath="$PROJECT_DIR$/position/transferMargin.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vendor/modules.txt" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/modules.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -30,7 +59,7 @@
       </list>
     </option>
   </component>
-  <component name="GOROOT" url="file:///opt/homebrew/Cellar/go/1.17.1/libexec" />
+  <component name="GOROOT" url="file:///opt/homebrew/Cellar/go/1.17.2/libexec" />
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
@@ -46,12 +75,15 @@
     <option name="indexEntireGoPath" value="false" />
   </component>
   <component name="ProjectId" id="1zEi7KIzZsdItn34MFmaX57SKrK" />
-  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
+    <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
     <property name="DefaultGoTemplateProperty" value="Go File" />
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
@@ -61,8 +93,13 @@
     <property name="go.modules.go.list.on.any.changes.was.set" value="true" />
     <property name="go.sdk.automatically.set" value="true" />
     <property name="go.vendoring.notification.had.been.shown" value="true" />
-    <property name="last_opened_file_path" value="$USER_HOME$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="settings.editor.selected.configurable" value="editor.preferences.import" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
   </component>
   <component name="RunManager">
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
@@ -116,8 +153,10 @@
     <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VcsManagerConfiguration">
+    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
     <MESSAGE value="rest" />
-    <option name="LAST_COMMIT_MESSAGE" value="rest" />
+    <MESSAGE value="order complete" />
+    <option name="LAST_COMMIT_MESSAGE" value="order complete" />
   </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>

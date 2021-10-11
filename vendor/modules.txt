@@ -23,7 +23,5 @@ github.com/valyala/bytebufferpool
 github.com/valyala/fasthttp
 github.com/valyala/fasthttp/fasthttputil
 github.com/valyala/fasthttp/stackless
-# github.com/zmxv/bitmexgo v0.0.0-20190804192702-ee6830406f7e
-## explicit
 # gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 ## explicit; go 1.11

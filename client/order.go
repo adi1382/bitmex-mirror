@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bitmex-mirror/optional"
 	"github.com/google/go-querystring/query"
 	"net/http"
 	"strings"
@@ -11,8 +12,7 @@ import (
 
 func (c *Client) GetOrdersRequest() *reqToGetOrders {
 	return &reqToGetOrders{
-		c:      c,
-		filter: make(map[string]interface{}),
+		c: c,
 	}
 }
 
@@ -59,55 +59,6 @@ func (c *Client) CancelAllAfterRequest() *reqToCancelAllAfter {
 	}
 }
 
-//func (c *Client) GetOrders(req *reqToGetOrders) (*respToGetOrders, error) {
-//	response := new(respToGetOrders)
-//	err := c.request(req, response)
-//	return response, err
-//
-//}
-//
-//func (c *Client) AmendOrder(req *reqToAmendOrder) (*RespToAmendOrder, error) {
-//	response := new(RespToAmendOrder)
-//	err := c.request(req, response)
-//	return response, err
-//}
-//
-//func (c *Client) PlaceOrder(req *reqToPlaceOrder) (*RespToPlaceOrders, error) {
-//	response := new(RespToPlaceOrders)
-//	err := c.request(req, response)
-//	return response, err
-//}
-//
-//func (c *Client) CancelOrders(req *reqToCancelOrders) (*RespToCancelOrders, error) {
-//	response := new(RespToCancelOrders)
-//	err := c.request(req, response)
-//	return response, err
-//}
-//
-//func (c *Client) CancelAllOrders(req *reqToCancelAllOrders) (*RespToCancelAllOrders, error) {
-//	response := new(RespToCancelAllOrders)
-//	err := c.request(req, response)
-//	return response, err
-//}
-//
-//func (c *Client) AmendBulkOrders(req *reqToAmendBulkOrders) (*RespToAmendBulkOrders, error) {
-//	response := new(RespToAmendBulkOrders)
-//	err := c.request(req, response)
-//	return response, err
-//}
-//
-//func (c *Client) PlaceBuckOrders(req *reqToPlaceBulkOrders) (*RespToPlaceBulkOrders, error) {
-//	response := new(RespToPlaceBulkOrders)
-//	err := c.request(req, response)
-//	return response, err
-//}
-//
-//func (c *Client) CancelAllAfter(req *reqToCancelAllAfter) (*RespToCancelAllAfter, error) {
-//	response := new(RespToCancelAllAfter)
-//	err := c.request(req, response)
-//	return response, err
-//}
-
 type Order struct {
 	OrderID               string    `json:"orderID"`
 	ClOrdID               string    `json:"clOrdID"`
@@ -151,7 +102,7 @@ type reqToGetOrders struct {
 	columns   string
 	count     int
 	start     int
-	reverse   *bool
+	reverse   optional.Bool
 	startTime time.Time
 	endTime   time.Time
 }
@@ -161,8 +112,8 @@ func (req *reqToGetOrders) Symbol(symbol string) *reqToGetOrders {
 	return req
 }
 
-func (req *reqToGetOrders) AddFilter(key string, value interface{}) *reqToGetOrders {
-	req.filter[key] = value
+func (req *reqToGetOrders) Filter(filter map[string]interface{}) *reqToGetOrders {
+	req.filter = filter
 	return req
 }
 
@@ -182,7 +133,7 @@ func (req *reqToGetOrders) Start(start int) *reqToGetOrders {
 }
 
 func (req *reqToGetOrders) Reverse(reverse bool) *reqToGetOrders {
-	req.reverse = &reverse
+	req.reverse.Set(reverse)
 	return req
 }
 
@@ -196,13 +147,13 @@ func (req *reqToGetOrders) EndTime(endTime time.Time) *reqToGetOrders {
 	return req
 }
 
-func (req *reqToGetOrders) Do() (*respToGetOrders, error) {
-	response := new(respToGetOrders)
-	err := req.c.request(req, response)
+func (req *reqToGetOrders) Do() (RespToGetOrders, error) {
+	var response RespToGetOrders
+	err := req.c.request(req, &response)
 	return response, err
 }
 
-type respToGetOrders []Order
+type RespToGetOrders []Order
 
 func (req *reqToGetOrders) path() string {
 	return fmt.Sprintf("/order")
@@ -213,38 +164,43 @@ func (req *reqToGetOrders) method() string {
 }
 
 func (req *reqToGetOrders) query() string {
-	c, e := json.Marshal(req.filter)
-	filterString := string(c)
+	s, e := json.Marshal(req.filter)
+	filterStr := string(s)
+	if filterStr == "null" || e != nil {
+		filterStr = ""
+	}
 
-	if e != nil {
-		filterString = ""
+	s, e = json.Marshal(req.reverse)
+	reverseStr := string(s)
+	if reverseStr == "null" || e != nil {
+		reverseStr = ""
 	}
 
 	a := struct {
-		C      *Client `url:"-"`
-		Symbol string  `url:"symbol,omitempty"`
-		//Filter    map[string]interface{} `url:"filter,omitempty"`
+		C         *Client   `url:"-"`
+		Symbol    string    `url:"symbol,omitempty"`
+		Filter    string    `url:"filter,omitempty"`
 		Columns   string    `url:"columns,omitempty"`
 		Count     int       `url:"count,omitempty"`
 		Start     int       `url:"start,omitempty"`
-		Reverse   *bool     `url:"reverse,omitempty"`
+		Reverse   string    `url:"reverse,omitempty"`
 		StartTime time.Time `url:"startTime,omitempty"`
 		EndTime   time.Time `url:"endTime,omitempty"`
 	}{
 		req.c,
 		req.symbol,
-		//req.filter,
+		filterStr,
 		req.columns,
 		req.count,
 		req.start,
-		req.reverse,
+		reverseStr,
 		req.startTime,
 		req.endTime,
 	}
 	value, _ := query.Values(&a)
 
-	if filterString != "" {
-		return value.Encode() + "&filter=" + filterString
+	if filterStr != "" {
+		return value.Encode()
 	}
 
 	return value.Encode()
@@ -314,9 +270,11 @@ func (req *reqToAmendOrder) Text(text string) *reqToAmendOrder {
 	return req
 }
 
-func (req *reqToAmendOrder) Do() (*RespToAmendOrder, error) {
-	response := new(RespToAmendOrder)
-	err := req.c.request(req, response)
+func (req *reqToAmendOrder) Do() (RespToAmendOrder, error) {
+	response := RespToAmendOrder{}
+	fmt.Println("rr")
+	fmt.Println(response)
+	err := req.c.request(req, &response)
 	return response, err
 }
 
@@ -451,9 +409,9 @@ func (req *reqToPlaceOrder) Text(text string) *reqToPlaceOrder {
 	return req
 }
 
-func (req *reqToPlaceOrder) Do() (*RespToPlaceOrders, error) {
-	response := new(RespToPlaceOrders)
-	err := req.c.request(req, response)
+func (req *reqToPlaceOrder) Do() (RespToPlaceOrders, error) {
+	response := RespToPlaceOrders{}
+	err := req.c.request(req, &response)
 	return response, err
 }
 
@@ -536,9 +494,9 @@ func (req *reqToCancelOrders) Text(text string) *reqToCancelOrders {
 	return req
 }
 
-func (req *reqToCancelOrders) Do() (*RespToCancelOrders, error) {
-	response := new(RespToCancelOrders)
-	err := req.c.request(req, response)
+func (req *reqToCancelOrders) Do() (RespToCancelOrders, error) {
+	response := RespToCancelOrders{}
+	err := req.c.request(req, &response)
 	return response, err
 }
 
@@ -601,9 +559,9 @@ func (req *reqToCancelAllOrders) Text(text string) *reqToCancelAllOrders {
 	return req
 }
 
-func (req *reqToCancelAllOrders) Do() (*RespToCancelAllOrders, error) {
-	response := new(RespToCancelAllOrders)
-	err := req.c.request(req, response)
+func (req *reqToCancelAllOrders) Do() (RespToCancelAllOrders, error) {
+	response := RespToCancelAllOrders{}
+	err := req.c.request(req, &response)
 	return response, err
 }
 
@@ -653,9 +611,9 @@ func (req *reqToAmendBulkOrders) AddAmendedOrder(order ...*reqToAmendOrder) *req
 	return req
 }
 
-func (req *reqToAmendBulkOrders) Do() (*RespToAmendBulkOrders, error) {
-	response := new(RespToAmendBulkOrders)
-	err := req.c.request(req, response)
+func (req *reqToAmendBulkOrders) Do() (RespToAmendBulkOrders, error) {
+	response := RespToAmendBulkOrders{}
+	err := req.c.request(req, &response)
 	return response, err
 }
 
@@ -705,9 +663,9 @@ func (req *reqToPlaceBulkOrders) AddOrders(orders ...*reqToPlaceOrder) *reqToPla
 	return req
 }
 
-func (req *reqToPlaceBulkOrders) Do() (*RespToPlaceBulkOrders, error) {
-	response := new(RespToPlaceBulkOrders)
-	err := req.c.request(req, response)
+func (req *reqToPlaceBulkOrders) Do() (RespToPlaceBulkOrders, error) {
+	response := RespToPlaceBulkOrders{}
+	err := req.c.request(req, &response)
 	return response, err
 }
 
@@ -757,9 +715,9 @@ func (req *reqToCancelAllAfter) Timeout(timeout float64) *reqToCancelAllAfter {
 	return req
 }
 
-func (req *reqToCancelAllAfter) Do() (*RespToCancelAllAfter, error) {
-	response := new(RespToCancelAllAfter)
-	err := req.c.request(req, response)
+func (req *reqToCancelAllAfter) Do() (RespToCancelAllAfter, error) {
+	response := RespToCancelAllAfter{}
+	err := req.c.request(req, &response)
 	return response, err
 }
 

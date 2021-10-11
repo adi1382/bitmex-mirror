@@ -12,7 +12,7 @@ type Config struct {
 	secret   string
 }
 
-func NewConfig(key, secret string, test bool) *Config {
+func NewConfig(key, secret string, test bool) Config {
 	config := Config{
 		Key:    key,
 		secret: secret,
@@ -24,7 +24,7 @@ func NewConfig(key, secret string, test bool) *Config {
 		config.Endpoint = "https://www.bitmex.com/api/v1"
 	}
 
-	return &config
+	return config
 }
 
 func (p *Config) Sign(body string) string {

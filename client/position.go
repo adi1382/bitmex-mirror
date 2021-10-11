@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"github.com/google/go-querystring/query"
 	"net/http"
+	"strings"
 	"time"
 )
 
-func (c *Client) GetPositions(req *ReqToGetPositions) (*RespToGetPositions, error) {
+func (c *Client) GetPositions(req *reqToGetPositions) (*RespToGetPositions, error) {
 	response := new(RespToGetPositions)
 	err := c.request(req, response)
 	return response, err
@@ -126,28 +127,43 @@ type Position struct {
 	LastValue            int       `json:"lastValue"`
 }
 
-type ReqToGetPositions struct {
-	Filter  map[string]string `url:"filter,omitempty"`
-	Columns string            `url:"columns,omitempty"`
-	Count   int               `url:"count,omitempty"`
+type reqToGetPositions struct {
+	filter  map[string]interface{} `url:"filter,omitempty"`
+	columns string                 `url:"columns,omitempty"`
+	count   int                    `url:"count,omitempty"`
+}
+
+func (req *reqToGetPositions) AddFilter(key string, value interface{}) *reqToGetPositions {
+	req.filter[key] = value
+	return req
+}
+
+func (req *reqToGetPositions) Columns(columns ...string) *reqToGetPositions {
+	req.columns = strings.Join(columns, ",")
+	return req
+}
+
+func (req *reqToGetPositions) Count(count int) *reqToGetPositions {
+	req.count = count
+	return req
 }
 
 type RespToGetPositions []Position
 
-func (req *ReqToGetPositions) path() string {
+func (req *reqToGetPositions) path() string {
 	return fmt.Sprintf("/position")
 }
 
-func (req *ReqToGetPositions) method() string {
+func (req *reqToGetPositions) method() string {
 	return http.MethodPost
 }
 
-func (req *ReqToGetPositions) query() string {
+func (req *reqToGetPositions) query() string {
 	value, _ := query.Values(req)
 	return value.Encode()
 }
 
-func (req *ReqToGetPositions) payload() string {
+func (req *reqToGetPositions) payload() string {
 	return ""
 }
 

@@ -25,7 +25,7 @@ func NewClient(apiKey, secret string, test bool,
 }
 
 type Client struct {
-	auth        *auth.Config
+	auth        auth.Config
 	bucket10s   *ratelimit.Bucket
 	bucket1m    *ratelimit.Bucket
 	httpC       *fasthttp.Client
