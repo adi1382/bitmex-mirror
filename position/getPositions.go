@@ -2,9 +2,10 @@ package position
 
 import (
 	"fmt"
-	"github.com/google/go-querystring/query"
 	"net/http"
 	"time"
+
+	"github.com/google/go-querystring/query"
 )
 
 type Position struct {

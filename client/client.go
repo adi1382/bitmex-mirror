@@ -8,6 +8,15 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+// testClient - only used for writing tests
+func testClient(apiKey, secret string, test bool) *Client {
+	c := NewClient(
+		apiKey, secret, test,
+		ratelimit.NewBucket(time.Second*10, 10), ratelimit.NewBucket(time.Minute, 60),
+		&fasthttp.Client{})
+	return c
+}
+
 func NewClient(apiKey, secret string, test bool,
 	bucket10s, bucket1m *ratelimit.Bucket,
 	httpClient *fasthttp.Client) *Client {

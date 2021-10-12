@@ -1,3 +1,5 @@
+4d63.com/optional v0.0.0-20210416043625-b0d24626ad92 h1:KQpfgRW5xhKjM/2PXB1O+LD6imOLMvk8iiEmlgvrgGc=
+4d63.com/optional v0.0.0-20210416043625-b0d24626ad92/go.mod h1:bFXXNZlIFFsKAs+1dUcqo6tn1Y0/H7x1vevWgNzc+K8=
 github.com/andybalholm/brotli v1.0.2 h1:JKnhI/XQ75uFBTiuzXpzFrUriDPiZjlOSzh6wXogP0E=
 github.com/andybalholm/brotli v1.0.2/go.mod h1:loMXtMfwqflxFJPmdbJO0a3KNoPuLBgiu3qAvBg8x/Y=
 github.com/golang/snappy v0.0.3/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=

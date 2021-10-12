@@ -3,35 +3,44 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/go-querystring/query"
 	"net/http"
 	"strings"
 	"time"
+
+	"4d63.com/optional"
+
+	"github.com/google/go-querystring/query"
 )
 
-func (c *Client) GetPositions(req *reqToGetPositions) (*RespToGetPositions, error) {
-	response := new(RespToGetPositions)
-	err := c.request(req, response)
-	return response, err
-}
-
-func (c *Client) ChangeLeverage(req *ReqToChangeLeverage) (*RespToChangeLeverage, error) {
-	response := new(RespToChangeLeverage)
-	err := c.request(req, response)
-	return response, err
-}
-
-func (c *Client) ChangeRiskLimit(req *ReqToChangeRiskLimit) (*RespToChangeRiskLimit, error) {
-	response := new(RespToChangeRiskLimit)
-	err := c.request(req, response)
-	return response, err
-}
-
-func (c *Client) IsolateMargin(req *ReqToIsolateMargin) (*RespToIsolateMargin, error) {
-	response := new(RespToIsolateMargin)
-	err := c.request(req, response)
-	return response, err
-}
+//func (c *Client) GetPositionsRequest() *reqToGetPositions {
+//	r := reqToGetPositions{
+//		c: c,
+//	}
+//}
+//
+//func (c *Client) IsolateMarginRequest() (*reqToGetPositions, error) {
+//	response := new(RespToIsolateMargin)
+//	err := c.request(req, response)
+//	return response, err
+//}
+//
+//func (c *Client) ChangeLeverageRequest(req *reqToChangeLeverage) (*reqToGetPositions, error) {
+//	response := new(RespToChangeLeverage)
+//	err := c.request(req, response)
+//	return response, err
+//}
+//
+//func (c *Client) ChangeRiskLimitRequest(req *reqToChangeRiskLimit) (*reqToGetPositions, error) {
+//	response := new(RespToChangeRiskLimit)
+//	err := c.request(req, response)
+//	return response, err
+//}
+//
+//func (c *Client) TransferMarginRequest(req *reqToTransferMargin) (*reqToGetPositions, error) {
+//	response := new(RespToTransferMargin)
+//	err := c.request(req, response)
+//	return response, err
+//}
 
 type Position struct {
 	Account              int       `json:"account"`
@@ -127,14 +136,23 @@ type Position struct {
 	LastValue            int       `json:"lastValue"`
 }
 
+// reqToGetPositions --
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
 type reqToGetPositions struct {
-	filter  map[string]interface{} `url:"filter,omitempty"`
-	columns string                 `url:"columns,omitempty"`
-	count   int                    `url:"count,omitempty"`
+	c       *Client
+	filter  map[string]interface{}
+	columns string
+	count   int
 }
 
-func (req *reqToGetPositions) AddFilter(key string, value interface{}) *reqToGetPositions {
-	req.filter[key] = value
+type RespToGetPositions []Position
+
+func (req *reqToGetPositions) Filter(filter map[string]interface{}) *reqToGetPositions {
+	req.filter = filter
 	return req
 }
 
@@ -148,133 +166,268 @@ func (req *reqToGetPositions) Count(count int) *reqToGetPositions {
 	return req
 }
 
-type RespToGetPositions []Position
+func (req *reqToGetPositions) Do() (RespToGetPositions, error) {
+	var response RespToGetPositions
+	err := req.c.request(req, &response)
+	return response, err
+}
 
 func (req *reqToGetPositions) path() string {
 	return fmt.Sprintf("/position")
 }
 
 func (req *reqToGetPositions) method() string {
-	return http.MethodPost
+	return http.MethodGet
 }
 
-func (req *reqToGetPositions) query() string {
-	value, _ := query.Values(req)
-	return value.Encode()
+func (req *reqToGetPositions) query() (string, error) {
+	s, e := json.Marshal(req.filter)
+	filterStr := string(s)
+	if filterStr == "null" || e != nil {
+		filterStr = ""
+	}
+
+	a := struct {
+		Filter  string `url:"filter,omitempty"`
+		Columns string `url:"columns,omitempty"`
+		Count   int    `url:"count,omitempty"`
+	}{
+		filterStr,
+		req.columns,
+		req.count,
+	}
+
+	value, err := query.Values(&a)
+	if err != nil {
+		return "", err
+	}
+	return value.Encode(), nil
 }
 
-func (req *reqToGetPositions) payload() string {
-	return ""
+func (req *reqToGetPositions) payload() (string, error) {
+	return "", nil
 }
 
-// ReqToIsolateMargin --
-type ReqToIsolateMargin struct {
-	Symbol  string `url:"symbol,omitempty" json:"symbol,omitempty"`
-	Enabled *bool  `url:"enabled,omitempty" json:"enabled,omitempty"`
+// reqToIsolateMargin --
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+type reqToIsolateMargin struct {
+	c       *Client
+	symbol  string
+	enabled optional.Bool
 }
 
 type RespToIsolateMargin Position
 
-func (req *ReqToIsolateMargin) path() string {
+func (req *reqToIsolateMargin) Symbol(symbol string) *reqToIsolateMargin {
+	req.symbol = symbol
+	return req
+}
+
+func (req *reqToIsolateMargin) Enabled(enabled bool) *reqToIsolateMargin {
+	req.enabled = optional.OfBool(enabled)
+	return req
+}
+
+func (req *reqToIsolateMargin) Do() (RespToIsolateMargin, error) {
+	var response RespToIsolateMargin
+	err := req.c.request(req, &response)
+	return response, err
+}
+
+func (req *reqToIsolateMargin) path() string {
 	return fmt.Sprintf("/position/isolate")
 }
 
-func (req *ReqToIsolateMargin) method() string {
+func (req *reqToIsolateMargin) method() string {
 	return http.MethodPost
 }
 
-func (req *ReqToIsolateMargin) query() string {
-	return ""
+func (req *reqToIsolateMargin) query() (string, error) {
+	return "", nil
 }
 
-func (req *ReqToIsolateMargin) payload() string {
-	b, err := json.Marshal(req)
-	if err != nil {
-		return ""
+func (req *reqToIsolateMargin) payload() (string, error) {
+
+	a := struct {
+		Symbol  string        `json:"symbol,omitempty"`
+		Enabled optional.Bool `json:"enabled,omitempty"`
+	}{
+		req.symbol,
+		req.enabled,
 	}
-	return string(b)
+
+	b, err := json.Marshal(&a)
+	return string(b), err
 }
 
-// ReqToChangeLeverage --
-type ReqToChangeLeverage struct {
-	Symbol   string   `url:"symbol" json:"symbol"`
-	Leverage *float64 `url:"leverage" json:"leverage"`
+// reqToChangeLeverage --
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+type reqToChangeLeverage struct {
+	c        *Client
+	symbol   string
+	leverage optional.Float64
 }
 
 type RespToChangeLeverage Position
 
-func (req *ReqToChangeLeverage) path() string {
+func (req *reqToChangeLeverage) Symbol(symbol string) *reqToChangeLeverage {
+	req.symbol = symbol
+	return req
+}
+
+func (req *reqToChangeLeverage) Leverage(leverage float64) *reqToChangeLeverage {
+	req.leverage = optional.OfFloat64(leverage)
+	return req
+}
+
+func (req *reqToChangeLeverage) Do() (RespToChangeLeverage, error) {
+	var response RespToChangeLeverage
+	err := req.c.request(req, &response)
+	return response, err
+}
+
+func (req *reqToChangeLeverage) path() string {
 	return fmt.Sprintf("/position/leverage")
 }
 
-func (req *ReqToChangeLeverage) method() string {
+func (req *reqToChangeLeverage) method() string {
 	return http.MethodPost
 }
 
-func (req *ReqToChangeLeverage) query() string {
-	return ""
+func (req *reqToChangeLeverage) query() (string, error) {
+	return "", nil
 }
 
-func (req *ReqToChangeLeverage) payload() string {
-	b, err := json.Marshal(req)
-	if err != nil {
-		return ""
+func (req *reqToChangeLeverage) payload() (string, error) {
+
+	a := struct {
+		Symbol   string           `json:"symbol,omitempty"`
+		Leverage optional.Float64 `json:"leverage,omitempty"`
+	}{
+		req.symbol,
+		req.leverage,
 	}
-	return string(b)
+
+	b, err := json.Marshal(&a)
+	return string(b), err
 }
 
-// ReqToChangeRiskLimit --
-type ReqToChangeRiskLimit struct {
-	Symbol    string   `url:"symbol" json:"symbol"`
-	RiskLimit *float64 `url:"riskLimit" json:"riskLimit"`
+// reqToChangeRiskLimit --
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+type reqToChangeRiskLimit struct {
+	c         *Client
+	symbol    string
+	riskLimit optional.Float64
 }
 
 type RespToChangeRiskLimit Position
 
-func (req *ReqToChangeRiskLimit) path() string {
+func (req *reqToChangeRiskLimit) Symbol(symbol string) *reqToChangeRiskLimit {
+	req.symbol = symbol
+	return req
+}
+
+func (req *reqToChangeRiskLimit) RiskLimit(riskLimit float64) *reqToChangeRiskLimit {
+	req.riskLimit = optional.OfFloat64(riskLimit)
+	return req
+}
+
+func (req *reqToChangeRiskLimit) Do() (RespToChangeRiskLimit, error) {
+	var response RespToChangeRiskLimit
+	err := req.c.request(req, &response)
+	return response, err
+}
+
+func (req *reqToChangeRiskLimit) path() string {
 	return fmt.Sprintf("/position/riskLimit")
 }
 
-func (req *ReqToChangeRiskLimit) method() string {
+func (req *reqToChangeRiskLimit) method() string {
 	return http.MethodPost
 }
 
-func (req *ReqToChangeRiskLimit) query() string {
-	return ""
+func (req *reqToChangeRiskLimit) query() (string, error) {
+	return "", nil
 }
 
-func (req *ReqToChangeRiskLimit) payload() string {
-	b, err := json.Marshal(req)
-	if err != nil {
-		return ""
+func (req *reqToChangeRiskLimit) payload() (string, error) {
+
+	a := struct {
+		Symbol    string           `json:"symbol,omitempty"`
+		RiskLimit optional.Float64 `json:"riskLimit,omitempty"`
+	}{
+		req.symbol,
+		req.riskLimit,
 	}
-	return string(b)
+
+	b, err := json.Marshal(&a)
+	return string(b), err
 }
 
-// ReqToTransferMargin --
-type ReqToTransferMargin struct {
-	Symbol string   `url:"symbol" json:"symbol"`
-	Amount *float64 `url:"amount" json:"amount"`
+// reqToTransferMargin --
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+type reqToTransferMargin struct {
+	c      *Client
+	symbol string
+	amount optional.Float64
 }
 
 type RespToTransferMargin Position
 
-func (req *ReqToTransferMargin) path() string {
+func (req *reqToTransferMargin) Symbol(symbol string) *reqToTransferMargin {
+	req.symbol = symbol
+	return req
+}
+
+func (req *reqToTransferMargin) Amount(amount float64) *reqToTransferMargin {
+	req.amount = optional.OfFloat64(amount)
+	return req
+}
+
+func (req *reqToTransferMargin) Do() (RespToTransferMargin, error) {
+	var response RespToTransferMargin
+	err := req.c.request(req, &response)
+	return response, err
+}
+
+func (req *reqToTransferMargin) path() string {
 	return fmt.Sprintf("/position/transferMargin")
 }
 
-func (req *ReqToTransferMargin) method() string {
+func (req *reqToTransferMargin) method() string {
 	return http.MethodPost
 }
 
-func (req *ReqToTransferMargin) query() string {
-	return ""
+func (req *reqToTransferMargin) query() (string, error) {
+	return "", nil
 }
 
-func (req *ReqToTransferMargin) payload() string {
-	b, err := json.Marshal(req)
-	if err != nil {
-		return ""
+func (req *reqToTransferMargin) payload() (string, error) {
+
+	a := struct {
+		Symbol string           `json:"symbol,omitempty"`
+		Amount optional.Float64 `json:"amount,omitempty"`
+	}{
+		req.symbol,
+		req.amount,
 	}
-	return string(b)
+
+	b, err := json.Marshal(&a)
+	return string(b), err
 }

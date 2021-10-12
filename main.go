@@ -5,6 +5,13 @@ import (
 )
 
 func main() {
+
+	//c := Client{}
+
+	//for n := 0; n < b.N; n++ {
+	//
+	//}
+
 	r := rest.NewRestObject()
 	//a := client.NewRequestToGetOrders().symbol("XBTUSD")
 	//fmt.Println(a.path())
@@ -12,12 +19,22 @@ func main() {
 
 	c := r.AddNewClient("pkOAYJNujj_-cW3gN0FjPizp", "LgiVEp09S4TFw9FfoMuurP-7lVJ6DPfbCRHWhomkqn7qx-F4", true)
 
-	a := map[string]interface{}{"open": true}
+	//c.AmendOrderRequest().OrderID("DF").OrderQty(123).Payload()
+	//c.AmendOrderRequest2().OrderID("DF").OrderQty(123).Payload()
 
+	a := map[string]interface{}{"open": true}
+	//
 	_, err := c.GetOrdersRequest().Symbol("XBTUSD").Filter(a).Do()
 	if err != nil {
 		panic(err)
 	}
+
+	//_, err := c.AmendOrderRequest().OrderID("cf24f237-e8cc-488f-b63d-fcb7a76c4653").OrderQty(100).Price(7800).Do()
+	//if err != nil {
+	//	panic(err)
+	//}
+
+	//fmt.Println(do)
 
 	//fmt.Println(getOrders)
 	////
@@ -50,7 +67,7 @@ func main() {
 	//os.Exit(-1)
 	////fmt.Println(c)
 	//
-	////orders, err := c.GetOrdersRequest().Symbol("XBTUSD").Start(0).
+	////orders, err := c.GetOrdersRequest().symbol("XBTUSD").Start(0).
 	////	StartTime(time.Now().UTC().Add(-5*time.Hour)).
 	////	AddFilter("open", true).Columns("orderQty", "price").Do()
 	////if err != nil {
@@ -58,8 +75,8 @@ func main() {
 	////}
 	////fmt.Println("________")
 	////fmt.Println(orders)
-	//o1 := c.PlaceOrderRequest().Symbol("XBTUSD").Price(35000).OrderQty(100)
-	//o2 := c.PlaceOrderRequest().Symbol("XBTUSD").Price(70000).OrderQty(-300)
+	//o1 := c.PlaceOrderRequest().symbol("XBTUSD").Price(35000).OrderQty(100)
+	//o2 := c.PlaceOrderRequest().symbol("XBTUSD").Price(70000).OrderQty(-300)
 	//
 	//fmt.Println(o1, o2)
 	//
@@ -107,7 +124,7 @@ func main() {
 	////
 	////leverage, err := c.ChangeLeverage(&position.ReqToChangeLeverage{
 	////	symbol:   "XBTUSD",
-	////	Leverage: 0,
+	////	leverage: 0,
 	////})
 	////if err != nil {
 	////	panic(err)

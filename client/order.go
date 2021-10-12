@@ -3,11 +3,12 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bitmex-mirror/optional"
-	"github.com/google/go-querystring/query"
 	"net/http"
 	"strings"
 	"time"
+
+	"4d63.com/optional"
+	"github.com/google/go-querystring/query"
 )
 
 func (c *Client) GetOrdersRequest() *reqToGetOrders {
@@ -36,8 +37,7 @@ func (c *Client) CancelOrdersRequest() *reqToCancelOrders {
 
 func (c *Client) CancelAllOrdersRequest() *reqToCancelAllOrders {
 	return &reqToCancelAllOrders{
-		c:      c,
-		filter: make(map[string]interface{}),
+		c: c,
 	}
 }
 
@@ -95,6 +95,12 @@ type Order struct {
 	Timestamp             time.Time `json:"timestamp"`
 }
 
+// reqToGetOrders --
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
 type reqToGetOrders struct {
 	c         *Client
 	symbol    string
@@ -133,7 +139,7 @@ func (req *reqToGetOrders) Start(start int) *reqToGetOrders {
 }
 
 func (req *reqToGetOrders) Reverse(reverse bool) *reqToGetOrders {
-	req.reverse.Set(reverse)
+	req.reverse = optional.Bool{reverse}
 	return req
 }
 
@@ -163,29 +169,23 @@ func (req *reqToGetOrders) method() string {
 	return http.MethodGet
 }
 
-func (req *reqToGetOrders) query() string {
+func (req *reqToGetOrders) query() (string, error) {
 	s, e := json.Marshal(req.filter)
 	filterStr := string(s)
 	if filterStr == "null" || e != nil {
 		filterStr = ""
 	}
 
-	s, e = json.Marshal(req.reverse)
-	reverseStr := string(s)
-	if reverseStr == "null" || e != nil {
-		reverseStr = ""
-	}
-
 	a := struct {
-		C         *Client   `url:"-"`
-		Symbol    string    `url:"symbol,omitempty"`
-		Filter    string    `url:"filter,omitempty"`
-		Columns   string    `url:"columns,omitempty"`
-		Count     int       `url:"count,omitempty"`
-		Start     int       `url:"start,omitempty"`
-		Reverse   string    `url:"reverse,omitempty"`
-		StartTime time.Time `url:"startTime,omitempty"`
-		EndTime   time.Time `url:"endTime,omitempty"`
+		C         *Client       `url:"-"`
+		Symbol    string        `url:"symbol,omitempty"`
+		Filter    string        `url:"filter,omitempty"`
+		Columns   string        `url:"columns,omitempty"`
+		Count     int           `url:"count,omitempty"`
+		Start     int           `url:"start,omitempty"`
+		Reverse   optional.Bool `url:"reverse,omitempty"`
+		StartTime time.Time     `url:"startTime,omitempty"`
+		EndTime   time.Time     `url:"endTime,omitempty"`
 	}{
 		req.c,
 		req.symbol,
@@ -193,35 +193,39 @@ func (req *reqToGetOrders) query() string {
 		req.columns,
 		req.count,
 		req.start,
-		reverseStr,
+		req.reverse,
 		req.startTime,
 		req.endTime,
 	}
-	value, _ := query.Values(&a)
+	value, err := query.Values(&a)
 
-	if filterStr != "" {
-		return value.Encode()
+	if err != nil {
+		return "", err
 	}
 
-	return value.Encode()
+	return value.Encode(), nil
 }
 
-func (req *reqToGetOrders) payload() string {
-	return ""
+func (req *reqToGetOrders) payload() (string, error) {
+	return "", nil
 }
 
 // reqToAmendOrder --
-
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
 type reqToAmendOrder struct {
 	c              *Client
 	orderID        string
 	origClOrdID    string
 	clOrdID        string
-	orderQty       *float64
-	leavesQty      *float64
-	price          *float64
-	stopPx         *float64
-	pegOffsetValue *float64
+	orderQty       optional.Float64
+	leavesQty      optional.Float64
+	price          optional.Float64
+	stopPx         optional.Float64
+	pegOffsetValue optional.Float64
 	text           string
 }
 
@@ -241,27 +245,27 @@ func (req *reqToAmendOrder) ClOrdID(clOrdID string) *reqToAmendOrder {
 }
 
 func (req *reqToAmendOrder) OrderQty(orderQty float64) *reqToAmendOrder {
-	req.orderQty = &orderQty
+	req.orderQty = optional.Float64{orderQty}
 	return req
 }
 
 func (req *reqToAmendOrder) LeavesQty(leavesQty float64) *reqToAmendOrder {
-	req.leavesQty = &leavesQty
+	req.leavesQty = optional.OfFloat64(leavesQty)
 	return req
 }
 
 func (req *reqToAmendOrder) Price(price float64) *reqToAmendOrder {
-	req.price = &price
+	req.price = optional.OfFloat64(price)
 	return req
 }
 
 func (req *reqToAmendOrder) StopPx(stopPx float64) *reqToAmendOrder {
-	req.stopPx = &stopPx
+	req.stopPx = optional.OfFloat64(stopPx)
 	return req
 }
 
 func (req *reqToAmendOrder) PegOffsetValue(pegOffsetValue float64) *reqToAmendOrder {
-	req.pegOffsetValue = &pegOffsetValue
+	req.pegOffsetValue = optional.OfFloat64(pegOffsetValue)
 	return req
 }
 
@@ -272,8 +276,6 @@ func (req *reqToAmendOrder) Text(text string) *reqToAmendOrder {
 
 func (req *reqToAmendOrder) Do() (RespToAmendOrder, error) {
 	response := RespToAmendOrder{}
-	fmt.Println("rr")
-	fmt.Println(response)
 	err := req.c.request(req, &response)
 	return response, err
 }
@@ -288,23 +290,22 @@ func (req *reqToAmendOrder) method() string {
 	return http.MethodPut
 }
 
-func (req *reqToAmendOrder) query() string {
-	return ""
+func (req *reqToAmendOrder) query() (string, error) {
+	return "", nil
 }
 
-func (req *reqToAmendOrder) payload() string {
-
+func (req *reqToAmendOrder) payload() (string, error) {
 	a := struct {
-		C              *Client  `json:"-"`
-		OrderID        string   `json:"orderID,omitempty"`
-		OrigClOrdID    string   `json:"origClOrdID,omitempty"`
-		ClOrdID        string   `json:"clOrdID,omitempty"`
-		OrderQty       *float64 `json:"orderQty,omitempty"`
-		LeavesQty      *float64 `json:"leavesQty,omitempty"`
-		Price          *float64 `json:"price,omitempty"`
-		StopPx         *float64 `json:"stopPx,omitempty"`
-		PegOffsetValue *float64 `json:"pefOffsetValue,omitempty"`
-		Text           string   `json:"text,omitempty"`
+		C              *Client          `json:"-"`
+		OrderID        string           `json:"orderID,omitempty"`
+		OrigClOrdID    string           `json:"origClOrdID,omitempty"`
+		ClOrdID        string           `json:"clOrdID,omitempty"`
+		OrderQty       optional.Float64 `json:"orderQty,omitempty"`
+		LeavesQty      optional.Float64 `json:"leavesQty,omitempty"`
+		Price          optional.Float64 `json:"price,omitempty"`
+		StopPx         optional.Float64 `json:"stopPx,omitempty"`
+		PegOffsetValue optional.Float64 `json:"pefOffsetValue,omitempty"`
+		Text           string           `json:"text,omitempty"`
 	}{
 		req.c,
 		req.orderID,
@@ -319,24 +320,25 @@ func (req *reqToAmendOrder) payload() string {
 	}
 
 	b, err := json.Marshal(&a)
-	if err != nil {
-		return ""
-	}
-	return string(b)
+	return string(b), err
 }
 
-// GetOrdersRequest reqToPlaceOrder  --
-
+// reqToPlaceOrder  --
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
 type reqToPlaceOrder struct {
 	c              *Client
 	symbol         string
 	side           string
-	orderQty       *float64
-	price          *float64
-	displayQty     *float64
-	stopPx         *float64
+	orderQty       optional.Float64
+	price          optional.Float64
+	displayQty     optional.Float64
+	stopPx         optional.Float64
 	clOrdID        string
-	pegOffsetValue *float64
+	pegOffsetValue optional.Float64
 	pegPriceType   string
 	ordTyp         string
 	timeInForce    string
@@ -355,22 +357,22 @@ func (req *reqToPlaceOrder) Side(side string) *reqToPlaceOrder {
 }
 
 func (req *reqToPlaceOrder) OrderQty(orderQty float64) *reqToPlaceOrder {
-	req.orderQty = &orderQty
+	req.orderQty = optional.OfFloat64(orderQty)
 	return req
 }
 
 func (req *reqToPlaceOrder) Price(price float64) *reqToPlaceOrder {
-	req.price = &price
+	req.price = optional.OfFloat64(price)
 	return req
 }
 
 func (req *reqToPlaceOrder) DisplayQty(displayQty float64) *reqToPlaceOrder {
-	req.displayQty = &displayQty
+	req.displayQty = optional.OfFloat64(displayQty)
 	return req
 }
 
 func (req *reqToPlaceOrder) StopPx(stopPx float64) *reqToPlaceOrder {
-	req.stopPx = &stopPx
+	req.stopPx = optional.OfFloat64(stopPx)
 	return req
 }
 
@@ -380,7 +382,7 @@ func (req *reqToPlaceOrder) ClOrdID(clOrdID string) *reqToPlaceOrder {
 }
 
 func (req *reqToPlaceOrder) PegOffsetValue(pegOffsetValue float64) *reqToPlaceOrder {
-	req.pegOffsetValue = &pegOffsetValue
+	req.pegOffsetValue = optional.OfFloat64(pegOffsetValue)
 	return req
 }
 
@@ -425,27 +427,27 @@ func (req *reqToPlaceOrder) method() string {
 	return http.MethodPost
 }
 
-func (req *reqToPlaceOrder) query() string {
-	return ""
+func (req *reqToPlaceOrder) query() (string, error) {
+	return "", nil
 }
 
-func (req *reqToPlaceOrder) payload() string {
+func (req *reqToPlaceOrder) payload() (string, error) {
 
 	a := struct {
-		C              *Client  `json:"-"`
-		Symbol         string   `json:"symbol,omitempty"`
-		Side           string   `json:"side,omitempty"`
-		OrderQty       *float64 `json:"orderQty,omitempty"`
-		Price          *float64 `json:"price,omitempty"`
-		DisplayQty     *float64 `json:"displayQty,omitempty"`
-		StopPx         *float64 `json:"stopPx,omitempty"`
-		ClOrdID        string   `json:"clOrdID,omitempty"`
-		PegOffsetValue *float64 `json:"pefOffsetValue,omitempty"`
-		PegPriceType   string   `json:"pegPriceType,omitempty"`
-		OrdTyp         string   `json:"ordType,omitempty"`
-		TimeInForce    string   `json:"timeInForce,omitempty"`
-		ExecInst       string   `json:"execInst,omitempty"`
-		Text           string   `json:"text,omitempty"`
+		C              *Client          `json:"-"`
+		Symbol         string           `json:"symbol,omitempty"`
+		Side           string           `json:"side,omitempty"`
+		OrderQty       optional.Float64 `json:"orderQty,omitempty"`
+		Price          optional.Float64 `json:"price,omitempty"`
+		DisplayQty     optional.Float64 `json:"displayQty,omitempty"`
+		StopPx         optional.Float64 `json:"stopPx,omitempty"`
+		ClOrdID        string           `json:"clOrdID,omitempty"`
+		PegOffsetValue optional.Float64 `json:"pefOffsetValue,omitempty"`
+		PegPriceType   string           `json:"pegPriceType,omitempty"`
+		OrdTyp         string           `json:"ordType,omitempty"`
+		TimeInForce    string           `json:"timeInForce,omitempty"`
+		ExecInst       string           `json:"execInst,omitempty"`
+		Text           string           `json:"text,omitempty"`
 	}{
 		req.c,
 		req.symbol,
@@ -464,14 +466,15 @@ func (req *reqToPlaceOrder) payload() string {
 	}
 
 	b, err := json.Marshal(&a)
-	if err != nil {
-		return ""
-	}
-	return string(b)
+	return string(b), err
 }
 
 // reqToCancelOrders --
-
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
 type reqToCancelOrders struct {
 	c        *Client
 	orderIDs []string
@@ -510,11 +513,11 @@ func (req *reqToCancelOrders) method() string {
 	return http.MethodDelete
 }
 
-func (req *reqToCancelOrders) query() string {
-	return ""
+func (req *reqToCancelOrders) query() (string, error) {
+	return "", nil
 }
 
-func (req *reqToCancelOrders) payload() string {
+func (req *reqToCancelOrders) payload() (string, error) {
 
 	a := struct {
 		C        *Client  `json:"-"`
@@ -529,14 +532,15 @@ func (req *reqToCancelOrders) payload() string {
 	}
 
 	b, err := json.Marshal(&a)
-	if err != nil {
-		return ""
-	}
-	return string(b)
+	return string(b), err
 }
 
 // reqToCancelAllOrders --
-
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
 type reqToCancelAllOrders struct {
 	c      *Client
 	symbol string
@@ -549,8 +553,8 @@ func (req *reqToCancelAllOrders) Symbol(symbol string) *reqToCancelAllOrders {
 	return req
 }
 
-func (req *reqToCancelAllOrders) AddFilter(key string, value interface{}) *reqToCancelAllOrders {
-	req.filter[key] = value
+func (req *reqToCancelAllOrders) Filter(filter map[string]interface{}) *reqToCancelAllOrders {
+	req.filter = filter
 	return req
 }
 
@@ -575,11 +579,11 @@ func (req *reqToCancelAllOrders) method() string {
 	return http.MethodDelete
 }
 
-func (req *reqToCancelAllOrders) query() string {
-	return ""
+func (req *reqToCancelAllOrders) query() (string, error) {
+	return "", nil
 }
 
-func (req *reqToCancelAllOrders) payload() string {
+func (req *reqToCancelAllOrders) payload() (string, error) {
 
 	a := struct {
 		C      *Client                `json:"-"`
@@ -594,13 +598,15 @@ func (req *reqToCancelAllOrders) payload() string {
 	}
 
 	b, err := json.Marshal(&a)
-	if err != nil {
-		return ""
-	}
-	return string(b)
+	return string(b), err
 }
 
 // reqToAmendBulkOrders --
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
 type reqToAmendBulkOrders struct {
 	c      *Client
 	orders []*reqToAmendOrder
@@ -627,16 +633,20 @@ func (req *reqToAmendBulkOrders) method() string {
 	return http.MethodPut
 }
 
-func (req *reqToAmendBulkOrders) query() string {
-	return ""
+func (req *reqToAmendBulkOrders) query() (string, error) {
+	return "", nil
 }
 
-func (req *reqToAmendBulkOrders) payload() string {
+func (req *reqToAmendBulkOrders) payload() (string, error) {
 
 	a := make([]string, 0, 2)
 
 	for i := range req.orders {
-		a = append(a, req.orders[i].payload())
+		if payload, err := req.orders[i].payload(); err != nil {
+			return "", err
+		} else {
+			a = append(a, payload)
+		}
 	}
 
 	c := struct {
@@ -646,13 +656,15 @@ func (req *reqToAmendBulkOrders) payload() string {
 	}
 
 	b, err := json.Marshal(&c)
-	if err != nil {
-		return ""
-	}
-	return string(b)
+	return string(b), err
 }
 
 // reqToPlaceBulkOrders --
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
 type reqToPlaceBulkOrders struct {
 	c      *Client
 	orders []*reqToPlaceOrder
@@ -679,16 +691,20 @@ func (req *reqToPlaceBulkOrders) method() string {
 	return http.MethodPost
 }
 
-func (req *reqToPlaceBulkOrders) query() string {
-	return ""
+func (req *reqToPlaceBulkOrders) query() (string, error) {
+	return "", nil
 }
 
-func (req *reqToPlaceBulkOrders) payload() string {
+func (req *reqToPlaceBulkOrders) payload() (string, error) {
 
 	a := make([]string, 0, 2)
 
 	for i := range req.orders {
-		a = append(a, req.orders[i].payload())
+		if payload, err := req.orders[i].payload(); err != nil {
+			return "", err
+		} else {
+			a = append(a, payload)
+		}
 	}
 
 	c := struct {
@@ -698,20 +714,22 @@ func (req *reqToPlaceBulkOrders) payload() string {
 	}
 
 	b, err := json.Marshal(&c)
-	if err != nil {
-		return ""
-	}
-	return string(b)
+	return string(b), err
 }
 
 // reqToCancelAllAfter --
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
 type reqToCancelAllAfter struct {
 	c       *Client
-	timeout *float64
+	timeout optional.Float64
 }
 
 func (req *reqToCancelAllAfter) Timeout(timeout float64) *reqToCancelAllAfter {
-	req.timeout = &timeout
+	req.timeout = optional.OfFloat64(timeout)
 	return req
 }
 
@@ -731,23 +749,20 @@ func (req *reqToCancelAllAfter) method() string {
 	return http.MethodPost
 }
 
-func (req *reqToCancelAllAfter) query() string {
-	return ""
+func (req *reqToCancelAllAfter) query() (string, error) {
+	return "", nil
 }
 
-func (req *reqToCancelAllAfter) payload() string {
+func (req *reqToCancelAllAfter) payload() (string, error) {
 
 	a := struct {
-		C       *Client  `json:"-"`
-		Timeout *float64 `json:"timeout,omitempty"`
+		C       *Client          `json:"-"`
+		Timeout optional.Float64 `json:"timeout,omitempty"`
 	}{
 		req.c,
 		req.timeout,
 	}
 
 	b, err := json.Marshal(&a)
-	if err != nil {
-		return ""
-	}
-	return string(b)
+	return string(b), err
 }

@@ -29,17 +29,26 @@ func (c *Client) request(req Requester, results interface{}) error {
 	return nil
 }
 
-func (c *Client) newRequest(r Requester) *fasthttp.Request {
-	// avoid Pointer's butting
+func (c *Client) newRequest(r Requester) (*fasthttp.Request, error) {
 	u, _ := url.ParseRequestURI(c.auth.Endpoint)
 	u.Path = u.Path + r.path()
-	u.RawQuery = r.query()
+
+	query, err := r.query()
+	if err != nil {
+		return nil, errors.Wrap(err, "query prepare error")
+	}
+	u.RawQuery = query
 
 	req := fasthttp.AcquireRequest()
 	req.Header.SetMethod(r.method())
 	req.SetRequestURI(u.String())
-	body := r.payload()
+
+	body, err := r.payload()
+	if err != nil {
+		return nil, errors.Wrap(err, "payload prepare error")
+	}
 	req.SetBody([]byte(body))
+
 	//fmt.Println("********")
 	//fmt.Println(r.payload())
 	//fmt.Println(r.query())
@@ -48,21 +57,25 @@ func (c *Client) newRequest(r Requester) *fasthttp.Request {
 	req.Header.Set("Api-Expires", apiExpires)
 	req.Header.Set("Api-Key", c.auth.Key)
 	//TODO: ASSIGN USER AGENT
-	//req.Header.Set("User-Agent", "bitmexgo")
+	req.Header.Set("User-Agent", "Bitmex")
 	req.Header.Set("Api-Signature", c.PrepareSignature(r, apiExpires))
 	req.Header.Set("Content-Type", "application/json")
 
-	return req
+	return req, nil
 }
 
 func (c *Client) do(r Requester) (*fasthttp.Response, error) {
-	req := c.newRequest(r)
+	req, err := c.newRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
 	res := fasthttp.AcquireResponse()
 
 	fmt.Println("Request")
 	fmt.Println(req)
 
-	err := c.httpC.DoTimeout(req, res, time.Second*5)
+	err = c.httpC.DoTimeout(req, res, time.Second*5)
 	if err != nil {
 		return nil, errors.Wrap(err, "api request failed")
 	}
@@ -97,11 +110,12 @@ func decode(res *fasthttp.Response, out interface{}) error {
 func (c *Client) PrepareSignature(r Requester, apiExpires string) string {
 	signatureBody := r.method() + "/api/v1" + r.path()
 
-	if r.query() != "" {
-		signatureBody += "?" + r.query()
+	if q, _ := r.query(); q != "" {
+		signatureBody += "?" + q
 	}
 
-	signatureBody += apiExpires + r.payload()
+	body, _ := r.payload()
+	signatureBody += apiExpires + body
 
 	return c.auth.Sign(signatureBody)
 }
