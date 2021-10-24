@@ -1,4 +1,4 @@
-package main
+package bitmex
 
 import (
 	"context"
@@ -7,18 +7,17 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"testing"
 	"time"
-
-	"github.com/bitmex-mirror/bitmex"
 )
 
-func main() {
+func TestConnectCon(t *testing.T) {
 	fmt.Println(runtime.NumGoroutine())
 	logger := log.New(os.Stdout, "", log.Ldate|log.Lmicroseconds|log.LUTC|log.Lshortfile)
 	logger.Println("sadf")
 	//os.Exit(0)
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	ws, err := bitmex.NewWSConnection(ctx, true, logger)
+	ws, err := NewWSConnection(ctx, true, logger)
 	ctx2, cancel := context.WithCancel(ctx)
 	if err != nil {
 		panic(err)
@@ -45,5 +44,7 @@ func main() {
 	cancelFunc()
 	time.Sleep(time.Second)
 	fmt.Println(runtime.NumGoroutine())
+	//select {}
 	cancel()
+
 }
