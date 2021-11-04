@@ -3,7 +3,6 @@ package bitmex
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"strconv"
 	"time"
 
@@ -13,6 +12,9 @@ import (
 
 func (c *restClient) request(req Requester, results interface{}) error {
 	res, err := c.do(req)
+
+	defer fasthttp.ReleaseResponse(res)
+
 	if err != nil {
 		return err
 	}
@@ -24,8 +26,6 @@ func (c *restClient) request(req Requester, results interface{}) error {
 }
 
 func (c *restClient) newRequest(r Requester) (*fasthttp.Request, error) {
-	u, _ := url.ParseRequestURI(c.endpoint)
-
 	method := r.method()
 	path := r.path()
 	query, err := r.query()
@@ -37,21 +37,29 @@ func (c *restClient) newRequest(r Requester) (*fasthttp.Request, error) {
 		return nil, errors.Wrap(err, "payload prepare error")
 	}
 
-	u.Path = u.Path + path
+	uri := fasthttp.AcquireURI() // Acquiring URL from Pool
 
-	u.RawQuery = query
+	uri.SetHost(c.endpoint)
+	uri.SetQueryString(query)
+	uri.SetPath(path)
+	uri.SetScheme("https")
 
-	req := fasthttp.AcquireRequest()
+	fmt.Println("Calculated: ", uri.String())
+
+	req := fasthttp.AcquireRequest() // Acquiring Request from the Pool, released in do()
+
 	req.Header.SetMethod(method)
-	req.SetRequestURI(u.String())
+	req.SetRequestURI(uri.String())
 
-	req.SetBody([]byte(payload))
+	fasthttp.ReleaseURI(uri) // Releasing URL back to Pool
+
+	req.SetBodyString(payload)
 
 	apiExpires := strconv.FormatInt(time.Now().Add(time.Second*60).Unix(), 10)
 	req.Header.Set("Api-Expires", apiExpires)
 	req.Header.Set("Api-Key", c.auth.Key)
 	//TODO: ASSIGN USER AGENT
-	req.Header.Set("User-Agent", "Bitmex")
+	//req.Header.Set("User-Agent", "Bitmex")
 	req.Header.Set("Api-Signature", c.prepareSignature(path, method, query, payload, apiExpires))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -64,22 +72,23 @@ func (c *restClient) do(r Requester) (*fasthttp.Response, error) {
 		return nil, err
 	}
 
-	res := fasthttp.AcquireResponse()
+	res := fasthttp.AcquireResponse() // Acquiring Response from Pool
 
 	//fmt.Println("Request")
-	//fmt.Println(req)
+	fmt.Println(req)
 
 	start := time.Now().UnixNano()
 	err = c.httpC.DoTimeout(req, res, time.Second*5)
+
+	fasthttp.ReleaseRequest(req) // Releasing Request back to Pool
+
 	fmt.Println("Request Time: ", time.Now().UnixNano()-start)
 	if err != nil {
-		return nil, errors.Wrap(err, "api request failed")
+		return nil, errors.Wrap(err, "http request failed")
 	}
 
-	c.bucket1m.Take(1)
-
-	//fmt.Println(string(res.Header.Peek("X-Ratelimit-Remaining")), time.Now())
-	//fmt.Println("Available in bucket: ", c.bucket1m.Available())
+	fmt.Println("Rate limit available: ", string(res.Header.Peek("X-Ratelimit-Remaining")), time.Now())
+	//fmt.Println("Available in bucket: ", c.bucketM.Available())
 	//
 	//fmt.Println(res.Header.String())
 
@@ -102,7 +111,6 @@ func (c *restClient) do(r Requester) (*fasthttp.Response, error) {
 }
 
 func decode(res *fasthttp.Response, out interface{}) error {
-
 	if err := json.Unmarshal(res.Body(), out); err != nil {
 		return nil
 	} else {
@@ -118,6 +126,5 @@ func (c *restClient) prepareSignature(path, method, query, payload, apiExpires s
 	}
 
 	signatureBody += apiExpires + payload
-
 	return c.auth.Sign(signatureBody)
 }

@@ -1,51 +1,14 @@
 package bitmex
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"4d63.com/optional"
-	"github.com/google/go-querystring/query"
 	"github.com/valyala/fasthttp"
 )
-
-func (c *restClient) GetInstruments() *reqToGetInstruments {
-	return &reqToGetInstruments{
-		c: c,
-	}
-}
-
-func (c *restClient) GetActiveInstruments() *reqToGetActiveInstruments {
-	return &reqToGetActiveInstruments{
-		c: c,
-	}
-}
-
-func (c *restClient) GetActiveInstrumentsAndIndices() *reqToGetActiveInstrumentsAndIndices {
-	return &reqToGetActiveInstrumentsAndIndices{
-		c: c,
-	}
-}
-
-func (c *restClient) GetActiveIntervals() *reqToGetActiveIntervals {
-	return &reqToGetActiveIntervals{
-		c: c,
-	}
-}
-
-func (c *restClient) GetCompositeIndex() *reqToGetCompositeIndex {
-	return &reqToGetCompositeIndex{
-		c: c,
-	}
-}
-
-func (c *restClient) GetAllIndices() *reqToGetAllIndices {
-	return &reqToGetAllIndices{
-		c: c,
-	}
-}
 
 type Instrument struct {
 	Symbol                         string    `json:"symbol"`
@@ -174,331 +137,232 @@ type CompositeIndex struct {
 	Logged               time.Time `json:"logged"`
 }
 
-type reqToGetInstruments struct {
-	c         *restClient
-	symbol    string
-	filter    map[string]interface{}
-	columns   string
-	count     int
-	start     int
-	reverse   optional.Bool
-	startTime time.Time
-	endTime   time.Time
-}
-
-type RespToGetInstruments struct {
-}
-
-func (req *reqToGetInstruments) Symbol(symbol string) *reqToGetInstruments {
-	req.symbol = symbol
-	return req
-}
-
-func (req *reqToGetInstruments) Filter(filter map[string]interface{}) *reqToGetInstruments {
-	req.filter = filter
-	return req
-}
-
-func (req *reqToGetInstruments) Columns(columns ...string) *reqToGetInstruments {
-	req.columns = strings.Join(columns, ",")
-	return req
-}
-
-func (req *reqToGetInstruments) Count(count int) *reqToGetInstruments {
-	req.count = count
-	return req
-}
-
-func (req *reqToGetInstruments) Start(start int) *reqToGetInstruments {
-	req.start = start
-	return req
-}
-
-func (req *reqToGetInstruments) Reverse(reverse bool) *reqToGetInstruments {
-	req.reverse = optional.Bool{reverse}
-	return req
-}
-
-func (req *reqToGetInstruments) StartTime(startTime time.Time) *reqToGetInstruments {
-	req.startTime = startTime
-	return req
-}
-
-func (req *reqToGetInstruments) EndTime(endTime time.Time) *reqToGetInstruments {
-	req.endTime = endTime
-	return req
-}
-
-func (req *reqToGetInstruments) Do() (RespToGetInstruments, error) {
+// GetInstruments --
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+func (c *restClient) GetInstruments(ctx context.Context, req ReqToGetInstruments) (RespToGetInstruments, error) {
+	err := c.bucketM.Wait(ctx)
+	if err != nil {
+		return RespToGetInstruments{}, err
+	}
 	var response RespToGetInstruments
-	err := req.c.request(req, &response)
+	err = c.request(req, &response)
 	return response, err
 }
 
-func (req *reqToGetInstruments) path() string {
+type ReqToGetInstruments struct {
+	Symbol    string                 `json:"symbol,omitempty"`
+	Filter    map[string]interface{} `json:"filter,omitempty"`
+	Columns   string                 `json:"columns,omitempty"`
+	Count     int                    `json:"count,omitempty"`
+	Start     int                    `json:"start,omitempty"`
+	Reverse   optional.Bool          `json:"reverse,omitempty"`
+	StartTime optional.Time          `json:"startTime,omitempty"`
+	EndTime   optional.Time          `json:"endTime,omitempty"`
+}
+
+type RespToGetInstruments []Instrument
+
+func (req ReqToGetInstruments) path() string {
 	return fmt.Sprintf("/instrument")
 }
 
-func (req *reqToGetInstruments) method() string {
+func (req ReqToGetInstruments) method() string {
 	return fasthttp.MethodGet
 }
 
-func (req *reqToGetInstruments) query() (string, error) {
-	s, e := json.Marshal(req.filter)
-	filterStr := string(s)
-	if filterStr == "null" || e != nil {
-		filterStr = ""
-	}
-
-	a := struct {
-		C         *restClient   `url:"-"`
-		Symbol    string        `url:"symbol,omitempty"`
-		Filter    string        `url:"filter,omitempty"`
-		Columns   string        `url:"columns,omitempty"`
-		Count     int           `url:"count,omitempty"`
-		Start     int           `url:"start,omitempty"`
-		Reverse   optional.Bool `url:"reverse,omitempty"`
-		StartTime time.Time     `url:"startTime,omitempty"`
-		EndTime   time.Time     `url:"endTime,omitempty"`
-	}{
-		req.c,
-		req.symbol,
-		filterStr,
-		req.columns,
-		req.count,
-		req.start,
-		req.reverse,
-		req.startTime,
-		req.endTime,
-	}
-	value, err := query.Values(&a)
-	if err != nil {
-		return "", err
-	}
-
-	return value.Encode(), nil
-}
-
-func (req *reqToGetInstruments) payload() (string, error) {
+func (req ReqToGetInstruments) query() (string, error) {
 	return "", nil
 }
 
-type reqToGetActiveInstruments struct {
-	c *restClient
+func (req ReqToGetInstruments) payload() (string, error) {
+	b, err := json.Marshal(&req)
+	return string(b), err
 }
+
+// GetActiveInstruments --
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+func (c *restClient) GetActiveInstruments(ctx context.Context,
+	req ReqToGetActiveInstruments) (RespToGetActiveInstruments, error) {
+	err := c.bucketM.Wait(ctx)
+	if err != nil {
+		return RespToGetActiveInstruments{}, err
+	}
+	var response RespToGetActiveInstruments
+	err = c.request(req, &response)
+	return response, err
+}
+
+type ReqToGetActiveInstruments struct{}
 
 type RespToGetActiveInstruments []Instrument
 
-func (req *reqToGetActiveInstruments) Do() (RespToGetActiveInstruments, error) {
-	var response RespToGetActiveInstruments
-	err := req.c.request(req, &response)
-	return response, err
-}
-
-func (req *reqToGetActiveInstruments) path() string {
+func (req ReqToGetActiveInstruments) path() string {
 	return fmt.Sprintf("/instrument/active")
 }
 
-func (req *reqToGetActiveInstruments) method() string {
+func (req ReqToGetActiveInstruments) method() string {
 	return fasthttp.MethodGet
 }
 
-func (req *reqToGetActiveInstruments) query() (string, error) {
+func (req ReqToGetActiveInstruments) query() (string, error) {
 	return "", nil
 }
 
-func (req *reqToGetActiveInstruments) payload() (string, error) {
+func (req ReqToGetActiveInstruments) payload() (string, error) {
 	return "", nil
 }
 
-type reqToGetActiveInstrumentsAndIndices struct {
-	c *restClient
+// GetActiveInstrumentsAndIndices --
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+func (c *restClient) GetActiveInstrumentsAndIndices(ctx context.Context,
+	req ReqToGetActiveInstrumentsAndIndices) (RespToGetActiveInstrumentsAndIndices, error) {
+	err := c.bucketM.Wait(ctx)
+	if err != nil {
+		return RespToGetActiveInstrumentsAndIndices{}, err
+	}
+	var response RespToGetActiveInstrumentsAndIndices
+	err = c.request(req, &response)
+
+	return response, err
 }
+
+type ReqToGetActiveInstrumentsAndIndices struct{}
 
 type RespToGetActiveInstrumentsAndIndices []Instrument
 
-func (req *reqToGetActiveInstrumentsAndIndices) Do() (RespToGetActiveInstrumentsAndIndices, error) {
-	var response RespToGetActiveInstrumentsAndIndices
-	err := req.c.request(req, &response)
-	return response, err
-}
-
-func (req *reqToGetActiveInstrumentsAndIndices) path() string {
+func (req ReqToGetActiveInstrumentsAndIndices) path() string {
 	return fmt.Sprintf("/instrument/activeAndIndices")
 }
 
-func (req *reqToGetActiveInstrumentsAndIndices) method() string {
+func (req ReqToGetActiveInstrumentsAndIndices) method() string {
 	return fasthttp.MethodGet
 }
 
-func (req *reqToGetActiveInstrumentsAndIndices) query() (string, error) {
+func (req ReqToGetActiveInstrumentsAndIndices) query() (string, error) {
 	return "", nil
 }
 
-func (req *reqToGetActiveInstrumentsAndIndices) payload() (string, error) {
+func (req ReqToGetActiveInstrumentsAndIndices) payload() (string, error) {
 	return "", nil
 }
 
-type reqToGetActiveIntervals struct {
-	c *restClient
+// GetActiveIntervals --
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+func (c *restClient) GetActiveIntervals(ctx context.Context,
+	req ReqToGetActiveIntervals) (RespToGetActiveIntervals, error) {
+	err := c.bucketM.Wait(ctx)
+	if err != nil {
+		return RespToGetActiveIntervals{}, err
+	}
+	var response RespToGetActiveIntervals
+	err = c.request(req, &response)
+	return response, err
+
 }
+
+type ReqToGetActiveIntervals struct{}
 
 type RespToGetActiveIntervals Intervals
 
-func (req *reqToGetActiveIntervals) Do() (RespToGetActiveIntervals, error) {
-	var response RespToGetActiveIntervals
-	err := req.c.request(req, &response)
-	return response, err
-}
-
-func (req *reqToGetActiveIntervals) path() string {
+func (req ReqToGetActiveIntervals) path() string {
 	return fmt.Sprintf("/instrument/activeIntervals")
 }
 
-func (req *reqToGetActiveIntervals) method() string {
+func (req ReqToGetActiveIntervals) method() string {
 	return fasthttp.MethodGet
 }
 
-func (req *reqToGetActiveIntervals) query() (string, error) {
+func (req ReqToGetActiveIntervals) query() (string, error) {
 	return "", nil
 }
 
-func (req *reqToGetActiveIntervals) payload() (string, error) {
+func (req ReqToGetActiveIntervals) payload() (string, error) {
 	return "", nil
 }
 
-type reqToGetCompositeIndex struct {
-	c         *restClient
-	symbol    string
-	filter    map[string]interface{}
-	columns   string
-	count     int
-	start     int
-	reverse   optional.Bool
-	startTime time.Time
-	endTime   time.Time
+// GetCompositeIndex --
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+func (c *restClient) GetCompositeIndex(ctx context.Context,
+	req ReqToGetCompositeIndex) (RespToGetCompositeIndex, error) {
+	err := c.bucketM.Wait(ctx)
+	if err != nil {
+		return RespToGetCompositeIndex{}, err
+	}
+	var response RespToGetCompositeIndex
+	err = c.request(req, &response)
+	return response, err
+}
+
+type ReqToGetCompositeIndex struct {
+	Symbol    string                 `json:"symbol,omitempty"`
+	Filter    map[string]interface{} `json:"filter,omitempty"`
+	Columns   string                 `json:"columns,omitempty"`
+	Count     int                    `json:"count,omitempty"`
+	Start     int                    `json:"start,omitempty"`
+	Reverse   optional.Bool          `json:"reverse,omitempty"`
+	StartTime time.Time              `json:"startTime,omitempty"`
+	EndTime   time.Time              `json:"endTime,omitempty"`
 }
 
 type RespToGetCompositeIndex []CompositeIndex
 
-func (req *reqToGetCompositeIndex) Symbol(symbol string) *reqToGetCompositeIndex {
-	req.symbol = symbol
-	return req
-}
-
-func (req *reqToGetCompositeIndex) Filter(filter map[string]interface{}) *reqToGetCompositeIndex {
-	req.filter = filter
-	return req
-}
-
-func (req *reqToGetCompositeIndex) Columns(columns ...string) *reqToGetCompositeIndex {
-	req.columns = strings.Join(columns, ",")
-	return req
-}
-
-func (req *reqToGetCompositeIndex) Count(count int) *reqToGetCompositeIndex {
-	req.count = count
-	return req
-}
-
-func (req *reqToGetCompositeIndex) Start(start int) *reqToGetCompositeIndex {
-	req.start = start
-	return req
-}
-
-func (req *reqToGetCompositeIndex) Reverse(reverse bool) *reqToGetCompositeIndex {
-	req.reverse = optional.Bool{reverse}
-	return req
-}
-
-func (req *reqToGetCompositeIndex) StartTime(startTime time.Time) *reqToGetCompositeIndex {
-	req.startTime = startTime
-	return req
-}
-
-func (req *reqToGetCompositeIndex) EndTime(endTime time.Time) *reqToGetCompositeIndex {
-	req.endTime = endTime
-	return req
-}
-
-func (req *reqToGetCompositeIndex) Do() (RespToGetCompositeIndex, error) {
-	var response RespToGetCompositeIndex
-	err := req.c.request(req, &response)
-	return response, err
-}
-
-func (req *reqToGetCompositeIndex) path() string {
+func (req ReqToGetCompositeIndex) path() string {
 	return fmt.Sprintf("/instrument/compositeIndex")
 }
 
-func (req *reqToGetCompositeIndex) method() string {
+func (req ReqToGetCompositeIndex) method() string {
 	return fasthttp.MethodGet
 }
 
-func (req *reqToGetCompositeIndex) query() (string, error) {
-	s, e := json.Marshal(req.filter)
-	filterStr := string(s)
-	if filterStr == "null" || e != nil {
-		filterStr = ""
-	}
-
-	a := struct {
-		C         *restClient   `url:"-"`
-		Symbol    string        `url:"symbol,omitempty"`
-		Filter    string        `url:"filter,omitempty"`
-		Columns   string        `url:"columns,omitempty"`
-		Count     int           `url:"count,omitempty"`
-		Start     int           `url:"start,omitempty"`
-		Reverse   optional.Bool `url:"reverse,omitempty"`
-		StartTime time.Time     `url:"startTime,omitempty"`
-		EndTime   time.Time     `url:"endTime,omitempty"`
-	}{
-		req.c,
-		req.symbol,
-		filterStr,
-		req.columns,
-		req.count,
-		req.start,
-		req.reverse,
-		req.startTime,
-		req.endTime,
-	}
-	value, err := query.Values(&a)
-	if err != nil {
-		return "", err
-	}
-
-	return value.Encode(), nil
-}
-
-func (req *reqToGetCompositeIndex) payload() (string, error) {
+func (req ReqToGetCompositeIndex) query() (string, error) {
 	return "", nil
 }
 
-type reqToGetAllIndices struct {
-	c *restClient
+func (req ReqToGetCompositeIndex) payload() (string, error) {
+	b, err := json.Marshal(&req)
+	return string(b), err
 }
 
-type RespToGetAllIndices []Instrument
-
-func (req *reqToGetAllIndices) Do() (RespToGetAllIndices, error) {
+// GetAllIndices --
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+func (c *restClient) GetAllIndices(ctx context.Context, req ReqToGetAllIndices) (RespToGetAllIndices, error) {
+	err := c.bucketM.Wait(ctx)
+	if err != nil {
+		return RespToGetAllIndices{}, err
+	}
 	var response RespToGetAllIndices
-	err := req.c.request(req, &response)
+	err = c.request(req, response)
 	return response, err
 }
 
-func (req *reqToGetAllIndices) path() string {
+type ReqToGetAllIndices struct{}
+
+type RespToGetAllIndices []Instrument
+
+func (req ReqToGetAllIndices) path() string {
 	return fmt.Sprintf("/instrument/indices")
 }
 
-func (req *reqToGetAllIndices) method() string {
+func (req ReqToGetAllIndices) method() string {
 	return fasthttp.MethodGet
 }
 
-func (req *reqToGetAllIndices) query() (string, error) {
+func (req ReqToGetAllIndices) query() (string, error) {
 	return "", nil
 }
 
-func (req *reqToGetAllIndices) payload() (string, error) {
+func (req ReqToGetAllIndices) payload() (string, error) {
 	return "", nil
 }
