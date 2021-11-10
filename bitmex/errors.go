@@ -6,7 +6,7 @@ import (
 )
 
 type APIError struct {
-	StatusCode int
+	StatusCode int64
 	Message    string
 	Name       string
 }
@@ -27,4 +27,9 @@ func (e *APIError) UnmarshalJSON(data []byte) error {
 	e.Name = v["error"]["name"]
 
 	return nil
+}
+
+func IsAPIError(err error) bool {
+	_, ok := err.(APIError)
+	return ok
 }

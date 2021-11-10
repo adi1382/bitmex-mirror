@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"4d63.com/optional"
+	"github.com/bitmex-mirror/optional"
 	"github.com/valyala/fasthttp"
 )
 
@@ -24,10 +24,10 @@ type Instrument struct {
 	InverseLeg                     string    `json:"inverseLeg"`
 	SellLeg                        string    `json:"sellLeg"`
 	BuyLeg                         string    `json:"buyLeg"`
-	OptionStrikePcnt               int       `json:"optionStrikePcnt"`
-	OptionStrikeRound              int       `json:"optionStrikeRound"`
-	OptionStrikePrice              int       `json:"optionStrikePrice"`
-	OptionMultiplier               int       `json:"optionMultiplier"`
+	OptionStrikePcnt               int64     `json:"optionStrikePcnt"`
+	OptionStrikeRound              int64     `json:"optionStrikeRound"`
+	OptionStrikePrice              int64     `json:"optionStrikePrice"`
+	OptionMultiplier               int64     `json:"optionMultiplier"`
 	PositionCurrency               string    `json:"positionCurrency"`
 	Underlying                     string    `json:"underlying"`
 	QuoteCurrency                  string    `json:"quoteCurrency"`
@@ -37,84 +37,84 @@ type Instrument struct {
 	CalcInterval                   time.Time `json:"calcInterval"`
 	PublishInterval                time.Time `json:"publishInterval"`
 	PublishTime                    time.Time `json:"publishTime"`
-	MaxOrderQty                    int       `json:"maxOrderQty"`
-	MaxPrice                       int       `json:"maxPrice"`
-	LotSize                        int       `json:"lotSize"`
-	TickSize                       int       `json:"tickSize"`
-	Multiplier                     int       `json:"multiplier"`
+	MaxOrderQty                    int64     `json:"maxOrderQty"`
+	MaxPrice                       int64     `json:"maxPrice"`
+	LotSize                        int64     `json:"lotSize"`
+	TickSize                       int64     `json:"tickSize"`
+	Multiplier                     int64     `json:"multiplier"`
 	SettlCurrency                  string    `json:"settlCurrency"`
-	UnderlyingToPositionMultiplier int       `json:"underlyingToPositionMultiplier"`
-	UnderlyingToSettleMultiplier   int       `json:"underlyingToSettleMultiplier"`
-	QuoteToSettleMultiplier        int       `json:"quoteToSettleMultiplier"`
+	UnderlyingToPositionMultiplier int64     `json:"underlyingToPositionMultiplier"`
+	UnderlyingToSettleMultiplier   int64     `json:"underlyingToSettleMultiplier"`
+	QuoteToSettleMultiplier        int64     `json:"quoteToSettleMultiplier"`
 	IsQuanto                       bool      `json:"isQuanto"`
 	IsInverse                      bool      `json:"isInverse"`
-	InitMargin                     int       `json:"initMargin"`
-	MaintMargin                    int       `json:"maintMargin"`
-	RiskLimit                      int       `json:"riskLimit"`
-	RiskStep                       int       `json:"riskStep"`
-	Limit                          int       `json:"limit"`
+	InitMargin                     int64     `json:"initMargin"`
+	MaintMargin                    int64     `json:"maintMargin"`
+	RiskLimit                      int64     `json:"riskLimit"`
+	RiskStep                       int64     `json:"riskStep"`
+	Limit                          int64     `json:"limit"`
 	Capped                         bool      `json:"capped"`
 	Taxed                          bool      `json:"taxed"`
 	Deleverage                     bool      `json:"deleverage"`
-	MakerFee                       int       `json:"makerFee"`
-	TakerFee                       int       `json:"takerFee"`
-	SettlementFee                  int       `json:"settlementFee"`
-	InsuranceFee                   int       `json:"insuranceFee"`
+	MakerFee                       int64     `json:"makerFee"`
+	TakerFee                       int64     `json:"takerFee"`
+	SettlementFee                  int64     `json:"settlementFee"`
+	InsuranceFee                   int64     `json:"insuranceFee"`
 	FundingBaseSymbol              string    `json:"fundingBaseSymbol"`
 	FundingQuoteSymbol             string    `json:"fundingQuoteSymbol"`
 	FundingPremiumSymbol           string    `json:"fundingPremiumSymbol"`
 	FundingTimestamp               time.Time `json:"fundingTimestamp"`
 	FundingInterval                time.Time `json:"fundingInterval"`
-	FundingRate                    int       `json:"fundingRate"`
-	IndicativeFundingRate          int       `json:"indicativeFundingRate"`
+	FundingRate                    int64     `json:"fundingRate"`
+	IndicativeFundingRate          int64     `json:"indicativeFundingRate"`
 	RebalanceTimestamp             time.Time `json:"rebalanceTimestamp"`
 	RebalanceInterval              time.Time `json:"rebalanceInterval"`
 	OpeningTimestamp               time.Time `json:"openingTimestamp"`
 	ClosingTimestamp               time.Time `json:"closingTimestamp"`
 	SessionInterval                time.Time `json:"sessionInterval"`
-	PrevClosePrice                 int       `json:"prevClosePrice"`
-	LimitDownPrice                 int       `json:"limitDownPrice"`
-	LimitUpPrice                   int       `json:"limitUpPrice"`
-	BankruptLimitDownPrice         int       `json:"bankruptLimitDownPrice"`
-	BankruptLimitUpPrice           int       `json:"bankruptLimitUpPrice"`
-	PrevTotalVolume                int       `json:"prevTotalVolume"`
-	TotalVolume                    int       `json:"totalVolume"`
-	Volume                         int       `json:"volume"`
-	Volume24H                      int       `json:"volume24h"`
-	PrevTotalTurnover              int       `json:"prevTotalTurnover"`
-	TotalTurnover                  int       `json:"totalTurnover"`
-	Turnover                       int       `json:"turnover"`
-	Turnover24H                    int       `json:"turnover24h"`
-	HomeNotional24H                int       `json:"homeNotional24h"`
-	ForeignNotional24H             int       `json:"foreignNotional24h"`
-	PrevPrice24H                   int       `json:"prevPrice24h"`
-	Vwap                           int       `json:"vwap"`
-	HighPrice                      int       `json:"highPrice"`
-	LowPrice                       int       `json:"lowPrice"`
-	LastPrice                      int       `json:"lastPrice"`
-	LastPriceProtected             int       `json:"lastPriceProtected"`
+	PrevClosePrice                 int64     `json:"prevClosePrice"`
+	LimitDownPrice                 int64     `json:"limitDownPrice"`
+	LimitUpPrice                   int64     `json:"limitUpPrice"`
+	BankruptLimitDownPrice         int64     `json:"bankruptLimitDownPrice"`
+	BankruptLimitUpPrice           int64     `json:"bankruptLimitUpPrice"`
+	PrevTotalVolume                int64     `json:"prevTotalVolume"`
+	TotalVolume                    int64     `json:"totalVolume"`
+	Volume                         int64     `json:"volume"`
+	Volume24H                      int64     `json:"volume24h"`
+	PrevTotalTurnover              int64     `json:"prevTotalTurnover"`
+	TotalTurnover                  int64     `json:"totalTurnover"`
+	Turnover                       int64     `json:"turnover"`
+	Turnover24H                    int64     `json:"turnover24h"`
+	HomeNotional24H                int64     `json:"homeNotional24h"`
+	ForeignNotional24H             int64     `json:"foreignNotional24h"`
+	PrevPrice24H                   int64     `json:"prevPrice24h"`
+	Vwap                           int64     `json:"vwap"`
+	HighPrice                      int64     `json:"highPrice"`
+	LowPrice                       int64     `json:"lowPrice"`
+	LastPrice                      int64     `json:"lastPrice"`
+	LastPriceProtected             int64     `json:"lastPriceProtected"`
 	LastTickDirection              string    `json:"lastTickDirection"`
-	LastChangePcnt                 int       `json:"lastChangePcnt"`
-	BidPrice                       int       `json:"bidPrice"`
-	MidPrice                       int       `json:"midPrice"`
-	AskPrice                       int       `json:"askPrice"`
-	ImpactBidPrice                 int       `json:"impactBidPrice"`
-	ImpactMidPrice                 int       `json:"impactMidPrice"`
-	ImpactAskPrice                 int       `json:"impactAskPrice"`
+	LastChangePcnt                 int64     `json:"lastChangePcnt"`
+	BidPrice                       int64     `json:"bidPrice"`
+	MidPrice                       int64     `json:"midPrice"`
+	AskPrice                       int64     `json:"askPrice"`
+	ImpactBidPrice                 int64     `json:"impactBidPrice"`
+	ImpactMidPrice                 int64     `json:"impactMidPrice"`
+	ImpactAskPrice                 int64     `json:"impactAskPrice"`
 	HasLiquidity                   bool      `json:"hasLiquidity"`
-	OpenInterest                   int       `json:"openInterest"`
-	OpenValue                      int       `json:"openValue"`
+	OpenInterest                   int64     `json:"openInterest"`
+	OpenValue                      int64     `json:"openValue"`
 	FairMethod                     string    `json:"fairMethod"`
-	FairBasisRate                  int       `json:"fairBasisRate"`
-	FairBasis                      int       `json:"fairBasis"`
-	FairPrice                      int       `json:"fairPrice"`
+	FairBasisRate                  int64     `json:"fairBasisRate"`
+	FairBasis                      int64     `json:"fairBasis"`
+	FairPrice                      int64     `json:"fairPrice"`
 	MarkMethod                     string    `json:"markMethod"`
-	MarkPrice                      int       `json:"markPrice"`
-	IndicativeTaxRate              int       `json:"indicativeTaxRate"`
-	IndicativeSettlePrice          int       `json:"indicativeSettlePrice"`
-	OptionUnderlyingPrice          int       `json:"optionUnderlyingPrice"`
-	SettledPriceAdjustmentRate     int       `json:"settledPriceAdjustmentRate"`
-	SettledPrice                   int       `json:"settledPrice"`
+	MarkPrice                      int64     `json:"markPrice"`
+	IndicativeTaxRate              int64     `json:"indicativeTaxRate"`
+	IndicativeSettlePrice          int64     `json:"indicativeSettlePrice"`
+	OptionUnderlyingPrice          int64     `json:"optionUnderlyingPrice"`
+	SettledPriceAdjustmentRate     int64     `json:"settledPriceAdjustmentRate"`
+	SettledPrice                   int64     `json:"settledPrice"`
 	Timestamp                      time.Time `json:"timestamp"`
 }
 
@@ -127,13 +127,13 @@ type CompositeIndex struct {
 	Timestamp            time.Time `json:"timestamp"`
 	Symbol               string    `json:"symbol"`
 	IndexSymbol          string    `json:"indexSymbol"`
-	IndexMultiplier      int       `json:"indexMultiplier"`
+	IndexMultiplier      int64     `json:"indexMultiplier"`
 	Reference            string    `json:"reference"`
-	LastPrice            int       `json:"lastPrice"`
-	SourcePrice          int       `json:"sourcePrice"`
+	LastPrice            int64     `json:"lastPrice"`
+	SourcePrice          int64     `json:"sourcePrice"`
 	ConversionIndex      string    `json:"conversionIndex"`
-	ConversionIndexPrice int       `json:"conversionIndexPrice"`
-	Weight               int       `json:"weight"`
+	ConversionIndexPrice int64     `json:"conversionIndexPrice"`
+	Weight               int64     `json:"weight"`
 	Logged               time.Time `json:"logged"`
 }
 
@@ -141,7 +141,7 @@ type CompositeIndex struct {
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-func (c *restClient) GetInstruments(ctx context.Context, req ReqToGetInstruments) (RespToGetInstruments, error) {
+func (c *RestClient) GetInstruments(ctx context.Context, req ReqToGetInstruments) (RespToGetInstruments, error) {
 	err := c.bucketM.Wait(ctx)
 	if err != nil {
 		return RespToGetInstruments{}, err
@@ -155,8 +155,8 @@ type ReqToGetInstruments struct {
 	Symbol    string                 `json:"symbol,omitempty"`
 	Filter    map[string]interface{} `json:"filter,omitempty"`
 	Columns   string                 `json:"columns,omitempty"`
-	Count     int                    `json:"count,omitempty"`
-	Start     int                    `json:"start,omitempty"`
+	Count     int64                  `json:"count,omitempty"`
+	Start     int64                  `json:"start,omitempty"`
 	Reverse   optional.Bool          `json:"reverse,omitempty"`
 	StartTime optional.Time          `json:"startTime,omitempty"`
 	EndTime   optional.Time          `json:"endTime,omitempty"`
@@ -185,7 +185,7 @@ func (req ReqToGetInstruments) payload() (string, error) {
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-func (c *restClient) GetActiveInstruments(ctx context.Context,
+func (c *RestClient) GetActiveInstruments(ctx context.Context,
 	req ReqToGetActiveInstruments) (RespToGetActiveInstruments, error) {
 	err := c.bucketM.Wait(ctx)
 	if err != nil {
@@ -220,7 +220,7 @@ func (req ReqToGetActiveInstruments) payload() (string, error) {
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-func (c *restClient) GetActiveInstrumentsAndIndices(ctx context.Context,
+func (c *RestClient) GetActiveInstrumentsAndIndices(ctx context.Context,
 	req ReqToGetActiveInstrumentsAndIndices) (RespToGetActiveInstrumentsAndIndices, error) {
 	err := c.bucketM.Wait(ctx)
 	if err != nil {
@@ -256,7 +256,7 @@ func (req ReqToGetActiveInstrumentsAndIndices) payload() (string, error) {
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-func (c *restClient) GetActiveIntervals(ctx context.Context,
+func (c *RestClient) GetActiveIntervals(ctx context.Context,
 	req ReqToGetActiveIntervals) (RespToGetActiveIntervals, error) {
 	err := c.bucketM.Wait(ctx)
 	if err != nil {
@@ -292,7 +292,7 @@ func (req ReqToGetActiveIntervals) payload() (string, error) {
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-func (c *restClient) GetCompositeIndex(ctx context.Context,
+func (c *RestClient) GetCompositeIndex(ctx context.Context,
 	req ReqToGetCompositeIndex) (RespToGetCompositeIndex, error) {
 	err := c.bucketM.Wait(ctx)
 	if err != nil {
@@ -307,8 +307,8 @@ type ReqToGetCompositeIndex struct {
 	Symbol    string                 `json:"symbol,omitempty"`
 	Filter    map[string]interface{} `json:"filter,omitempty"`
 	Columns   string                 `json:"columns,omitempty"`
-	Count     int                    `json:"count,omitempty"`
-	Start     int                    `json:"start,omitempty"`
+	Count     int64                  `json:"count,omitempty"`
+	Start     int64                  `json:"start,omitempty"`
 	Reverse   optional.Bool          `json:"reverse,omitempty"`
 	StartTime time.Time              `json:"startTime,omitempty"`
 	EndTime   time.Time              `json:"endTime,omitempty"`
@@ -337,7 +337,7 @@ func (req ReqToGetCompositeIndex) payload() (string, error) {
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-func (c *restClient) GetAllIndices(ctx context.Context, req ReqToGetAllIndices) (RespToGetAllIndices, error) {
+func (c *RestClient) GetAllIndices(ctx context.Context, req ReqToGetAllIndices) (RespToGetAllIndices, error) {
 	err := c.bucketM.Wait(ctx)
 	if err != nil {
 		return RespToGetAllIndices{}, err

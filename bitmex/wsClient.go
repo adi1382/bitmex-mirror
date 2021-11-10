@@ -3,44 +3,90 @@ package bitmex
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"golang.org/x/sync/errgroup"
 	"log"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
-	"golang.org/x/time/rate"
-
 	"github.com/bitmex-mirror/auth"
+	"github.com/pkg/errors"
+
+	"golang.org/x/time/rate"
 )
 
-// standard syntax of payload
-type wsMessage struct {
-	Op   string      `json:"op,omitempty"`
-	Args interface{} `json:"args,omitempty"`
+// NewWSClient subscribes a new stream for the client over the multiplexed websocket connection
+// it returns a variable of type *WSClient which implements methods to subscribe, unsubscribe, authenticate and write
+// standard message over the subscribed stream.
+// These methods provide a rest-like interface which returns errors received over the subscribed stream.
+func (ws *WSConnection) NewWSClient(ctx context.Context, config auth.Config,
+	topic string, logger *log.Logger, id string) (*WSClient, error) {
+
+	c := WSClient{
+		config:     config,
+		topic:      topic,
+		connWriter: ws.chWrite,
+		bucketM:    ws.bucketM,
+		id:         id,
+	}
+
+	receiver := make(chan []byte, 10000)
+
+	c.Done = make(chan struct{})
+	c.closing = make(chan string)
+
+	//c.subsData = make(chan []byte, 10)
+	//c.unSubsData = make(chan []byte, 10)
+	//c.authData = make(chan []byte, 10)
+	//c.cancelAfterData = make(chan []byte, 10)
+	c.socketMessage = make(chan []interface{}, 10)
+	c.bucketM = ws.bucketM
+
+	select {
+	case <-ws.Done:
+		return nil, ErrWSConnClosed
+	default:
+	}
+	c.SocketDone = ws.Done
+
+	go c.manager(ctx, logger, receiver, ws.removeClient)
+	c.Receiver = receiver
+
+	ws.clLock.Lock()
+	ws.clients[id] = &c
+	ws.clLock.Unlock()
+
+	return &c, nil
 }
 
-type wsClient struct {
+type WSClient struct {
 	// signal channel are closed by the respective functions to receive data on data channels
 	// signal channel are then set to nil to stop receiving data on data channels
 	// This implementation is required so the exported methods that writes over websocket are able to confirm
 	// if their request was successful or not
-	subsSignal        chan struct{}
-	subsData          chan []byte
-	unSubsSignal      chan struct{}
-	unSubsData        chan []byte
-	authSignal        chan struct{}
-	authData          chan []byte
-	cancelAfterSignal chan struct{}
-	cancelAfterData   chan []byte
+	//subsSignal        chan struct{}
+	//subsData          chan []byte
+	//unSubsSignal      chan struct{}
+	//unSubsData        chan []byte
+	//authSignal        chan struct{}
+	//authData          chan []byte
+	//cancelAfterSignal chan struct{}
+	//cancelAfterData   chan []byte
 
-	subsMu   sync.Mutex // Mutex for SubscribeStreams and UnsubscribeStreams
-	authMu   sync.Mutex // Mutex for Authenticate
-	cancelMu sync.Mutex // Mutex for CancelAllAfter
+	id              string
+	subscriptions   []pubSub
+	subscriptionsMu sync.RWMutex
 
-	returnCh      chan []byte        // returned to AddWSClient caller, closes when client drops
-	done          chan struct{}      // done is closed when client is closed
+	//subsMu   sync.Mutex // Mutex for SubscribeTables and UnsubscribeTables
+	//authMu   sync.Mutex // Mutex for Authenticate
+	//cancelMu sync.Mutex // Mutex for CancelAllAfter
+
+	Receiver      <-chan []byte      // returned to NewWSClient caller, closes when client drops
+	Done          chan struct{}      // Done is closed when client is closed
+	SocketDone    chan struct{}      // SocketDone is closed when ws connection is closed
 	closing       chan string        // signals manager to close the done channel
 	socketMessage chan []interface{} // socketMessage is used by the router to send message from socket for the client
 
@@ -50,583 +96,467 @@ type wsClient struct {
 	topic      string        // topic for multiplexed socket stream
 }
 
-// stop function can be called by anyone to close the client and all its processes
-// it can be called concurrently any number of times
-func (c *wsClient) stop(by string) {
+// Connect subscribes to the multiplexed socket stream, this function must be called before calling any other method
+// Expect to receive data Receiver channel after calling this method, so have the read on the Receiver already ready
+// before calling this function.
+// This function should only be called once.
+func (c *WSClient) Connect() {
+	msg := make([]interface{}, 0, 4)
+	msg = append(msg, 1, c.id, c.topic)
+	msgBytes, _ := json.Marshal(msg)
+
 	select {
-	case c.closing <- by:
-		<-c.done
-	case <-c.done:
+	case c.connWriter <- msgBytes:
+	case <-c.Done:
+	case <-c.SocketDone:
 	}
 }
 
-// manager handles several operations for the wsClient variable.
-// It starts at the construction of client, and it returns to close the client completely and close returnCh
-// and close done channel to notify all internal operation about the closure.
-// It receives on socketDone channel which closes when websocket connection is closed.
-// It receives on socketMessage channel which receives data from router, manager sends this data to handleSocketMsg.
-// It receives on sendCh which receives payload from handleSocketMsg, manager sends the data to receivers channel.
-// It also receives on client's context and closing channel which receives when stop function is caller to close the
-// client.
-func (c *wsClient) manager(ctx context.Context, logger *log.Logger,
-	socketDone <-chan struct{}, removeClient chan<- string) {
+func (c *WSClient) VerifyPartials(ctx context.Context, tables ...string) <-chan bool {
+	ClientSubs := make(chan []byte, 1)
+	ctx2, cancel := context.WithCancel(ctx)
+	c.subscribe(ctx2, ClientSubs)
 
-	defer func() {
-		for len(c.socketMessage) > 0 {
-			if v, ok := c.handleSocketMsg(<-c.socketMessage, logger); ok {
-				select {
-				case c.returnCh <- v:
-					c.toWriterFunc(v)
-				default:
+	type partials struct {
+		Table  string            `json:"table"`
+		Action string            `json:"action"`
+		Data   []json.RawMessage `json:"data"`
+	}
+
+	returnCh := make(chan bool, 1)
+
+	go func() {
+		defer cancel()
+		for {
+			select {
+			case msg := <-ClientSubs:
+				//fmt.Println("partial message: ", c.id, string(msg))
+				var partialMessage partials
+				if err := json.Unmarshal(msg, &partialMessage); err != nil {
+					break
 				}
+				if partialMessage.Action == WSDataActionPartial {
+					for i := range tables {
+						if partialMessage.Table == tables[i] {
+							tables[i] = tables[len(tables)-1]
+							tables = tables[:len(tables)-1]
+							break
+						}
+					}
+					if len(tables) == 0 {
+						returnCh <- true
+						return
+					}
+				}
+			case <-ctx2.Done():
+				returnCh <- false
+				return
 			}
-		}
-		close(c.done)
-		close(c.returnCh)
-
-		select {
-		case removeClient <- c.config.Key:
-		case <-socketDone:
 		}
 	}()
 
-	for {
-		select {
-		case <-ctx.Done():
-			logger.Printf("websocket: info: client: %s socket channel was done because: %s", c.config.Key,
-				"client context done")
-			go c.UnsubscribeConnection()
-			return
-		case <-socketDone:
-			logger.Printf("websocket: info: client: %s socket channel was done because: %s",
-				c.config.Key, "socket connection dropped")
-			return
-		case stoppedBy := <-c.closing:
-			logger.Printf("websocket: info: client: %s socket channel was done by: %s",
-				c.config.Key, stoppedBy)
-			return
-		case msg := <-c.socketMessage:
-			if v, ok := c.handleSocketMsg(msg, logger); ok {
-				select {
-				case c.returnCh <- v:
-					c.toWriterFunc(v)
-				default:
-					go c.UnsubscribeConnection()
-					logger.Printf("websocket: info: client: %s socket channel was done because: %s",
-						c.config.Key, "receive channel is jacked up to the tits")
-					return
-				}
-			}
-		}
-	}
+	return returnCh
 }
 
-// SubscribeStreams is used to subscribe different tables like orders, position, etc.
+// SubscribeTables is used to subscribe different tables like orders, position, etc.
 // When subscribing a private table, you must ensure that the client stream is successfully authenticated
 // using the Authenticate function.
 // This function does not return any error other than 429 rate-limiting error.
 // You must ensure that you subscribe to tables that exist, and subscribe private tables only after
 // successful authentication. If the subscription fails due to any error other than 429 error, the function will just
 // return a nil error value, however the error message can be caught through receivers channel.
-func (c *wsClient) SubscribeStreams(ctx context.Context, subs ...string) error {
+// update 429 is also handled by retry mechanism, so receiving error is very rare.
+func (c *WSClient) SubscribeTables(ctx context.Context, tables ...string) error {
 	// return if client is already closed
 	select {
-	case <-c.done:
-		return errors.New("client closed")
+	case <-c.Done:
+		select {
+		case <-c.SocketDone:
+			return ErrWSConnClosed
+		default:
+			return ErrWSClientClosed
+		}
 	default:
 	}
-
-	// Locking subsMu to prevent concurrent calls to SubscribeStreams or UnsubscribeStreams
-	c.subsMu.Lock()
-
-	defer func() {
-		// Setting subsSignal to nil so no data is received on subsData from toWriterFunc()
-		c.subsSignal = nil
-		// flushing subsData
-		for len(c.subsData) > 0 {
-			<-c.subsData
-		}
-		c.subsMu.Unlock()
-	}()
 
 	// preparing message to send multiplexed socket connection
 	message := make([]interface{}, 0, 4)
 	payload := wsMessage{
 		Op: "subscribe",
 	}
-	payload.Args = subs
-	message = append(message, 0, c.config.Key, c.topic, payload)
+	payload.Args = tables
+	message = append(message, 0, c.id, c.topic, payload)
 	msgByte, _ := json.Marshal(message)
 
 	// this context is used to taking tokens from bucket
 	// cancel func cancels when client is closed
+	//fmt.Println(ctx.Deadline())
+	//fmt.Println("Deadline: ",)
 	ctxWait, cancelWait := context.WithCancel(ctx)
 	defer cancelWait()
 
 	go func() {
 		select {
 		case <-ctxWait.Done():
-		case <-c.done:
+		case <-c.Done:
 			cancelWait()
 		}
 	}()
 
 	// waiting for tokens
 	// number of tokens = number of tables subscribing
-	if err := c.bucketM.WaitN(ctxWait, len(subs)); err != nil {
+	//fmt.Println("Allow: ", c.bucketM.AllowN(time.Now(), len(tables)))
+	if err := c.bucketM.WaitN(ctxWait, len(tables)); err != nil {
 		return err
 	}
+	//fmt.Println("released", c.id, time.Now())
 
 	// setting a timeout for confirmation from socket connection, this should not take long
 	ctxConf, cancelConf := context.WithTimeout(ctxWait, wsConfirmTimeout)
 	defer cancelConf()
 
+	table2 := make([]string, len(tables))
+	copy(table2, tables)
+	partials := c.VerifyPartials(ctxConf, table2...)
+
 	// sending message to socket writer or returning if client is already closed
+
+	ctxSubs, subscriptionCancel := context.WithCancel(ctxConf)
+	defer subscriptionCancel()
+
+	ClientSubs := make(chan []byte, 1)
+	c.subscribe(ctxSubs, ClientSubs)
+
 	select {
-	case <-c.done:
-		return errors.New("client closed")
+	case <-c.Done:
+		select {
+		case <-c.SocketDone:
+			return ErrWSConnClosed
+		default:
+			return ErrWSClientClosed
+		}
 	default:
 		select {
-		case <-c.done:
-			return errors.New("client closed")
+		case <-c.Done:
+			select {
+			case <-c.SocketDone:
+				return ErrWSConnClosed
+			default:
+				return ErrWSClientClosed
+			}
 		case c.connWriter <- msgByte:
 		}
 	}
+	//fmt.Println("sent", c.id, time.Now())
 
-	// making subsSignal alive for receiving data on subsData
-	c.subsSignal = make(chan struct{})
-	close(c.subsSignal)
+	n := len(tables)
+	success := make(chan struct{}, 3) // this channel is closed when the message is confirmed
+	g, ctxErr := errgroup.WithContext(ctxConf)
 
-	// retChan will be sent to different goroutines to receive error if any from socket
-	// For the case of SubscribeStreams and UnsubscribeStreams functions only 429 error code will be returned
-	// all other cases should be handled by the caller of the API using main receiver channel
-	retChan := make(chan error)
+	var retErr error
 
-	// socket will send a success or fail message for each table subscribed
-	num := len(subs)
-
-	// receiving data from subsData and checking for any error
+L:
 	for {
 		select {
-		case res := <-c.subsData:
-			// starting a go routine for each incoming msg
-			// If any routine is blocked due to extra messages than anticipated with same request then
-			// the routine will return automatically on return of SubscribeStreams because of CtxConf
-			// payload is reused and implements slice,
-			// so it should be ensured the values are not deleted down the call stack
-			// res is explicitly passed to prevent sharing the value
-			go func(ctxConf context.Context, retChan chan<- error, res []byte, payload wsMessage) {
-				// validating the message if it is for the same request this function sent
-				if request, ok := requestField(res); ok && validateSubsReq(request, payload) {
-					// checking the request was successful
-					if isSuccessful(res) {
+		case msg := <-ClientSubs:
+			fmt.Println("Verification Message: ", c.id, string(msg))
+			g.Go(func() error {
+				if request, ok := requestField(msg); ok && validateSubsReq(request, payload) {
+					if isSuccessful(msg) {
 						select {
-						case retChan <- nil:
-							return
-						case <-ctxConf.Done():
-							return
+						case success <- struct{}{}:
 						}
+						return nil
 					}
-
-					// request failed, sending error on retChan
-					select {
-					case retChan <- wsError(res):
-						return
-					case <-ctxConf.Done():
-						return
-					}
+					return c.wsError(msg)
 				}
-			}(ctxConf, retChan, res, payload)
-		case err := <-retChan:
-			// decrementing counter
-			// expected number of messages wih same request = number of tables subscribed
-			num--
-			if err != nil {
-				// returning error only in the case of 429 status code
-				// this is done to promote responsible use of the API, and the error message could get complicated
-				// as a different error could be received for each table subscribed
-				if err.(APIError).StatusCode == 429 {
-					return err
-				}
-			}
-			// return if all messages are successful
-			if num == 0 {
 				return nil
+			})
+		case <-ctxErr.Done():
+			retErr = ErrWSVerificationTimeout
+			break L
+		case <-success:
+			n--
+			if n == 0 {
+				break L
 			}
-		// if all messages with validated request are not received before canceling of context
-		case <-ctxConf.Done():
-			return errors.New("context canceled/timeout: message sent but could not verify")
-		// Returning if client is closed
-		case <-c.done:
-			return errors.New("client closed")
 		}
 	}
-}
 
-// UnsubscribeStreams it is to unsubscribe counterpart of SubscribeStreams
-// They are implemented in the same way, use this function to unsubscribe already subscribed tables.
-func (c *wsClient) UnsubscribeStreams(ctx context.Context, unSubs ...string) error {
-	// This API is implemented the same way as of SubscribeStreams
+	// unsubscribe from stream
+	subscriptionCancel()
+
+	//fmt.Println("verified", c.id, time.Now())
+
+	if err := g.Wait(); err != nil {
+		cause := errors.Cause(err)
+		//if cause == ErrTooManyRequests || cause == ErrServerOverloaded {
+		//	time.Sleep(time.Millisecond * 500)
+		//	return c.SubscribeTables(ctx, tables...)
+		//}
+		retErr = err
+		if cause == ErrBadRequest {
+			// don't return a bad request error
+			// no need to wait for partials
+			return nil
+		}
+	}
+
+	if retErr != nil {
+		return retErr
+	}
 
 	select {
-	case <-c.done:
-		return errors.New("client closed")
-	default:
-	}
-
-	c.subsMu.Lock()
-	defer func() {
-		c.unSubsSignal = nil
-		for len(c.unSubsData) > 0 {
-			<-c.unSubsData
-		}
-		c.subsMu.Unlock()
-	}()
-
-	// preparing message for multiplexed socket connection
-	message := make([]interface{}, 0, 4)
-	payload := wsMessage{
-		Op: "unsubscribe",
-	}
-	payload.Args = unSubs
-	message = append(message, 0, c.config.Key, c.topic, payload)
-	msgByte, _ := json.Marshal(message)
-
-	ctxWait, cancelWait := context.WithCancel(ctx)
-	defer cancelWait()
-
-	go func() {
-		select {
-		case <-ctxWait.Done():
-		case <-c.done:
-			cancelWait()
-		}
-	}()
-
-	if err := c.bucketM.WaitN(ctxWait, len(unSubs)); err != nil {
-		return err
-	}
-
-	ctxConf, cancelConf := context.WithTimeout(ctxWait, wsConfirmTimeout)
-	defer cancelConf()
-
-	select {
-	case <-c.done:
-		return errors.New("client closed")
-	default:
-		select {
-		case <-c.done:
-			return errors.New("client closed")
-		case c.connWriter <- msgByte:
-		}
-	}
-
-	c.unSubsSignal = make(chan struct{})
-	close(c.unSubsSignal)
-
-	retChan := make(chan error)
-
-	num := len(unSubs)
-
-	for {
-		select {
-		case res := <-c.unSubsData:
-			go func(ctxConf context.Context, retChan chan<- error, res []byte, payload wsMessage) {
-				if request, ok := requestField(res); ok && validateSubsReq(request, payload) {
-					if isSuccessful(res) {
-						select {
-						case retChan <- nil:
-							return
-						case <-ctxConf.Done():
-							return
-						}
-					}
-					select {
-					case retChan <- wsError(res):
-						return
-					case <-ctxConf.Done():
-						return
-					}
-				}
-			}(ctxConf, retChan, res, payload)
-		case err := <-retChan:
-			num--
-			if err != nil {
-				if err.(APIError).StatusCode == 429 {
-					return err
-				}
-			}
-			if num == 0 {
-				return nil
-			}
-		case <-ctxConf.Done():
-			return errors.New("context canceled/timeout: message sent but could not verify")
-		case <-c.done:
-			return errors.New("client closed")
+	case t := <-partials:
+		//fmt.Println("partials", t, c.id, time.Now())
+		if t {
+			return nil
+		} else {
+			c.UnsubscribeConnection()
+			return ErrWSConnClosed
 		}
 	}
 }
 
 // Authenticate sends an authentication message over the websocket connection for the client.
 // If it returns a non-nil error then most likely connection is now unsubscribed for the client, and you will
-// need to use the AddWSClient function again
-func (c *wsClient) Authenticate(ctx context.Context) error {
-	// This API is implemented in the very similar way as that of SubscribeStreams
+// need to use the NewWSClient function again
+func (c *WSClient) Authenticate(ctx context.Context) error {
+	// This API is implemented in the very similar way as that of SubscribeTables
 	// Authentication through websocket does consume a token from request limiter
 	// It does not need num variable as there is only one expected message from websocket
 
 	select {
-	case <-c.done:
-		return errors.New("client closed")
+	case <-c.Done:
+		select {
+		case <-c.SocketDone:
+			return ErrWSConnClosed
+		default:
+			return ErrWSClientClosed
+		}
 	default:
 	}
 
-	c.authMu.Lock()
-	defer func() {
-		c.authSignal = nil
-		for len(c.authData) > 0 {
-			<-c.authData
-		}
-		c.authMu.Unlock()
-	}()
-
-	// preparing message
+	// preparing message to send multiplexed socket connection
+	///////////////////////////////////////////////////////////////////////////////////
 	msg := make([]interface{}, 0, 4)
-	apiExpires := time.Now().Add(RequestTimeout).Unix()
+	apiExpires := time.Now().Add(requestTimeout).Unix()
 	signature := c.config.Sign("GET/realtime" + strconv.FormatInt(apiExpires, 10))
 	payload := wsMessage{
 		Op: "authKeyExpires",
 	}
 	payload.Args = []interface{}{c.config.Key, apiExpires, signature}
-	msg = append(msg, 0, c.config.Key, c.topic, payload)
+	msg = append(msg, 0, c.id, c.topic, payload)
 	msgByte, _ := json.Marshal(msg)
+	///////////////////////////////////////////////////////////////////////////////////
 
 	ctxConf, cancelConf := context.WithTimeout(ctx, wsConfirmTimeout)
 	defer cancelConf()
 
+	ClientSubs := make(chan []byte, 1)
+	c.subscribe(ctxConf, ClientSubs)
+
 	select {
-	case <-c.done:
-		return errors.New("client closed")
+	case <-c.Done:
+		select {
+		case <-c.SocketDone:
+			return ErrWSConnClosed
+		default:
+			return ErrWSClientClosed
+		}
 	default:
 		select {
-		case <-c.done:
-			return errors.New("client closed")
+		case <-c.Done:
+			select {
+			case <-c.SocketDone:
+				return ErrWSConnClosed
+			default:
+				return ErrWSClientClosed
+			}
 		case c.connWriter <- msgByte:
 		}
 	}
 
-	c.authSignal = make(chan struct{})
-	close(c.authSignal)
+	success := make(chan struct{}, 1)
+	g, ctxErr := errgroup.WithContext(ctx)
 
-	retChan := make(chan error)
+	var errOld error
 
+L:
 	for {
 		select {
-		case res := <-c.authData:
-			go func(ctxConf context.Context, retChan chan<- error, res []byte, payload wsMessage) {
-				if request, ok := requestField(res); ok && validateAuthReq(request, payload) {
-					if isSuccessful(res) {
+		case msg := <-ClientSubs:
+			g.Go(func() error {
+				if request, ok := requestField(msg); ok && validateAuthReq(request, payload) {
+					if isSuccessful(msg) {
 						select {
-						case retChan <- nil:
-							return
-						case <-ctxConf.Done():
-							return
+						case success <- struct{}{}:
+							return nil
+						case <-ctx.Done():
+							return nil
 						}
 					}
-					select {
-					case retChan <- wsError(res):
-						return
-					case <-ctxConf.Done():
-						return
-					}
+					return c.wsError(msg)
 				}
-			}(ctxConf, retChan, res, payload)
-		case err := <-retChan:
-			return err
-		case <-ctxConf.Done():
-			return errors.New("context canceled/timeout: message sent but could not verify")
-			//case <-c.done:
-			//	return errors.New("client done")
-			// when authentication failed the socket unsubscribes the client which closes the c.done channel
-			// this code is commented to prevent returning 'client done' error instead of more important
-			// websocket error
+				return nil
+			})
+		case <-ctxErr.Done():
+			errOld = ErrWSVerificationTimeout
+			break L
+		case <-success:
+			break L
 		}
 	}
-}
 
-// CancelAllAfter implements the cancelAllAfter subscription message of the websocket
-func (c *wsClient) CancelAllAfter(ctx context.Context, timeout time.Duration) error {
-	// This API is implemented in the very similar way as that of SubscribeStreams
-	// This message consumes one token from the request limiter
-	// It does not need num variable as there is only one expected message from websocket
-
-	select {
-	case <-c.done:
-		return errors.New("client closed")
-	default:
-	}
-
-	c.cancelMu.Lock()
-	defer func() {
-		c.cancelAfterSignal = nil
-		for len(c.cancelAfterData) > 0 {
-			<-c.cancelAfterData
+	if err := g.Wait(); err != nil {
+		cause := errors.Cause(err)
+		if cause == ErrTooManyRequests || cause == ErrServerOverloaded {
+			time.Sleep(time.Millisecond * 500)
+			return c.Authenticate(ctx)
 		}
-		c.cancelMu.Unlock()
-	}()
-
-	msg := make([]interface{}, 0, 4)
-	payload := wsMessage{
-		Op: "cancelAllAfter",
-	}
-	payload.Args = timeout.Milliseconds()
-	msg = append(msg, 0, c.config.Key, c.topic, payload)
-	msgByte, _ := json.Marshal(msg)
-
-	ctxWait, cancelWait := context.WithCancel(ctx)
-	defer cancelWait()
-
-	go func() {
-		select {
-		case <-ctxWait.Done():
-		case <-c.done:
-			cancelWait()
+		if cause == ErrBadRequest {
+			// don't return a bad request error
+			return nil
 		}
-	}()
-
-	if err := c.bucketM.Wait(ctxWait); err != nil {
 		return err
 	}
 
-	ctxConf, cancelConf := context.WithTimeout(ctxWait, wsConfirmTimeout)
-	defer cancelConf()
-
-	select {
-	case <-c.done:
-		return errors.New("client closed")
-	default:
-		select {
-		case <-c.done:
-			return errors.New("client closed")
-		case c.connWriter <- msgByte:
-		}
-	}
-
-	c.cancelAfterSignal = make(chan struct{})
-	close(c.cancelAfterSignal)
-
-	retChan := make(chan error)
-
-	// custom successful function for cancelAllAfter
-	isSuccess := func(data []byte) bool {
-		var res map[string]string
-		_ = json.Unmarshal(data, &res)
-		_, ok := res["cancelTime"]
-		return ok
-	}
-
-	for {
-		select {
-		case res := <-c.cancelAfterData:
-			go func(ctxConf context.Context, retChan chan<- error, res []byte, payload wsMessage) {
-				if request, ok := requestField(res); ok {
-					if validateCancelAllAfterReq(request, payload) {
-						if isSuccess(res) {
-							select {
-							case retChan <- nil:
-								return
-							case <-ctxConf.Done():
-								return
-							}
-						}
-						select {
-						case retChan <- wsError(res):
-							return
-						case <-ctxConf.Done():
-							return
-						}
-					}
-				}
-			}(ctxConf, retChan, res, payload)
-		case err := <-retChan:
-			return err
-		case <-ctxConf.Done():
-			return errors.New("context canceled/timeout: message sent but could not verify")
-		case <-c.done:
-			return errors.New("client done")
-		}
-	}
-
+	return errOld
 }
-
-//func (c *wsClient) AutoCancelAllAfter(ctx context.Context, timeout time.Duration, every time.Duration) {
-//	burstOffset := int(math.Ceil(1 / every.Minutes()))
-//	m := make(chan int)
-//	go func() {
-//		defer close(m)
-//		for {
-//			select {
-//			case m <- burstOffset:
-//			case <-c.done:
-//			}
-//		}
-//	}()
-//}
 
 // UnsubscribeConnection gracefully closes the client without closing the websocket connection, it notifies the host
 // that no data is required on this client and close the receiver channel.
-func (c *wsClient) UnsubscribeConnection() {
+// this function should not be called on another routine, and it should be allowed to block until the client is closed
+// don't attempt to restart the client until this function returns.
+func (c *WSClient) UnsubscribeConnection() {
 	select {
-	case <-c.done:
+	case <-c.Done:
 		return
 	default:
 	}
 
 	msg := make([]interface{}, 0, 3)
-	msg = append(msg, 2, c.config.Key, c.topic)
+	msg = append(msg, 2, c.id, c.topic)
 	msgByte, _ := json.Marshal(msg)
 
 	select {
-	case <-c.done:
+	case <-c.Done:
 		return
 	default:
 		select {
-		case <-c.done:
+		case <-c.Done:
 			return
 		case c.connWriter <- msgByte:
 		}
 	}
 
-	go c.stop("outside caller")
+	// Once called, the UnsubscribeConnection function will take over the socketMessage channel
+	// this might be shared with extractPayload function, in either case
+	// if Unsubscribe message is detected, stop function will be triggered.
+
+	// If UnsubscribeConnection is called from outside caller, extractPayload function will continue to work
+	// but if UnsubscribeConnection is called from manager, extractPayload will not be reachable, as
+	// UnsubscribeConnection will block the manager.
+
+	// This function shall only return after ensuring that the host has sent Unsubscribe message
+	t := time.After(wsConfirmTimeout)
+
+	for {
+		select {
+		case <-c.SocketDone:
+			return
+		case <-c.Done:
+			return
+		case <-t:
+			// retry Unsubscribe as client is still alive and no unsubscribe message has been received
+			c.UnsubscribeConnection()
+		case socketMessage := <-c.socketMessage:
+			if len(socketMessage) <= 3 {
+				if v, ok := msg[0].(float64); ok {
+					if v == 2 {
+						go c.stop("Unsubscribe function")
+						return
+					}
+				}
+			}
+		}
+	}
 }
 
-// toWriterFunc sends the processed payload data to the one of the socket writer functions SubscribeStreams,
-// UnsubscribeStreams, Authenticate, CancelAllAfter, these messages are sent so the writer function can verify if
-// their request was successful or not signal channels are closed by the writer functions when the data
-// sending starts
-func (c *wsClient) toWriterFunc(data []byte) {
+// stop function can be called by anyone to close the client and all its processes
+// it can be called concurrently any number of times
+func (c *WSClient) stop(by string) {
 	select {
-	case <-c.subsSignal:
-		c.subsData <- data
-	default:
+	case c.closing <- by:
+		<-c.Done
+	case <-c.Done:
 	}
+}
 
-	select {
-	case <-c.unSubsSignal:
-		c.unSubsData <- data
-	default:
-	}
+// manager handles several operations for the WSClient variable.
+// It starts at the construction of client, and it returns to close the client completely and close Receiver
+// and close done channel to notify all internal operation about the closure.
+// It receives on socketDone channel which closes when websocket connection is closed.
+// It receives on socketMessage channel which receives data from router, manager sends this data to extractPayload.
+// It receives on sendCh which receives payload from extractPayload, manager sends the data to receivers channel.
+// It also receives on client's context and closing channel which receives when stop function is caller to close the
+// client.
+func (c *WSClient) manager(ctx context.Context, logger *log.Logger, receiver chan<- []byte, removeClient chan<- string) {
 
-	select {
-	case <-c.authSignal:
-		c.authData <- data
-	default:
-	}
+	defer func() {
+		for len(c.socketMessage) > 0 {
+			if v, ok := c.extractPayload(<-c.socketMessage, logger); ok {
+				select {
+				case receiver <- v:
+					go c.publish(v)
+					//c.toWriterFunc(v)
+				default:
+				}
+			}
+		}
+		close(c.Done)
+		//close(c.Receiver)
 
-	select {
-	case <-c.cancelAfterSignal:
-		c.cancelAfterData <- data
-	default:
+		select {
+		case removeClient <- c.id:
+			fmt.Println("client removed")
+		case <-c.SocketDone:
+		}
+	}()
+
+	for {
+		select {
+		// canceled by context from the one who created this wsClient
+		case <-ctx.Done():
+			logger.Printf("websocket: info: client: %s socket channel was done because: %s", c.config.Key,
+				"client context done")
+			c.UnsubscribeConnection()
+			return
+		// ws connection is closed
+		case <-c.SocketDone:
+			logger.Printf("websocket: info: client: %s socket channel was done because: %s",
+				c.config.Key, "socket connection dropped")
+			return
+		// stop function is called
+		case stoppedBy := <-c.closing:
+			logger.Printf("websocket: info: client: %s socket channel was done by: %s",
+				c.config.Key, stoppedBy)
+			return
+		// data from router
+		case msg := <-c.socketMessage:
+			if v, ok := c.extractPayload(msg, logger); ok {
+				select {
+				case receiver <- v:
+					c.publish(v)
+					//c.toWriterFunc(v)
+				default:
+					c.UnsubscribeConnection()
+					logger.Printf("websocket: info: client: %s socket channel was done because: %s",
+						c.config.Key, "receive channel is jacked up to the tits")
+					return
+				}
+			}
+		}
 	}
 }
 
@@ -655,18 +585,74 @@ func requestField(data []byte) ([]byte, bool) {
 
 // wsError scans the socket message for error and status field and return an error value of type APIError
 // which implements the error interface.
-func wsError(data []byte) APIError {
-	var resStatus map[string]int
-	var resError map[string]string
-
-	_ = json.Unmarshal(data, &resStatus)
-	_ = json.Unmarshal(data, &resError)
-
+// TODO: request timeout error handling
+func (c *WSClient) wsError(data []byte) error {
+	errStr := string(data)
 	bitmexErr := APIError{Name: "WebsocketError"}
-	bitmexErr.StatusCode = resStatus["status"]
-	bitmexErr.Message = resError["error"]
+	var res map[string]interface{}
 
-	return bitmexErr
+	var err error
+	var ok bool
+
+	if err = json.Unmarshal(data, &res); err != nil {
+		return errors.Wrap(ErrUnexpectedError, fmt.Sprintf("wsError: unmarshal error Data: %s", errStr))
+	}
+
+	if _, ok = res["status"].(float64); !ok {
+		return errors.Wrap(ErrUnexpectedError, fmt.Sprintf("wsError: status field not found: %s", errStr))
+	}
+	bitmexErr.StatusCode = int64(res["status"].(float64))
+
+	if _, ok = res["error"].(string); !ok {
+		bitmexErr.Message = fmt.Sprintf("wsError: error field not found: %s", errStr)
+	} else {
+		bitmexErr.Message = res["error"].(string)
+	}
+
+	if bitmexErr.StatusCode == 400 {
+		// catch request expired error
+		if strings.Contains(bitmexErr.Message, "request") && strings.Contains(bitmexErr.Message, "expired") {
+			return errors.Wrap(ErrRequestExpired, bitmexErr.Message)
+		}
+
+		return errors.Wrap(ErrBadRequest, bitmexErr.Error())
+	}
+
+	if bitmexErr.StatusCode == 401 || bitmexErr.StatusCode == 403 {
+		return errors.Wrap(ErrInvalidAPIKey, bitmexErr.Error())
+	}
+
+	if bitmexErr.StatusCode == 503 {
+		return ErrServerOverloaded
+	}
+
+	if bitmexErr.StatusCode == 429 {
+		rateLimited := false
+
+		if m, ok := res["meta"]; ok {
+			if meta, ok := m.(map[string]interface{}); ok {
+				if wait, ok := meta["retryAfter"]; ok {
+					if wait, ok := wait.(float64); ok {
+						rateLimited = true
+						c.RateLimited(time.Second*time.Duration(wait), rateLimitMinuteCap)
+					}
+				}
+			}
+		}
+
+		if !rateLimited {
+			c.RateLimited(time.Minute, rateLimitMinuteCap)
+		}
+		return ErrTooManyRequests
+	}
+
+	if bitmexErr.StatusCode >= 500 {
+		return ErrServerError
+	} else if bitmexErr.StatusCode >= 400 {
+		return ErrClientError
+	}
+	// If http code is less than 400 than it's not really an error
+	return nil
 }
 
 // equalStrSlice checks if all the elements of slice 'a' are present in slice 'b' and vice-versa
@@ -686,7 +672,7 @@ func equalStrSlice(a, b []string) bool {
 }
 
 // validateSubsReq verifies if the request field on the incoming socket message is the same as that of
-// the request message sent by the functions SubscribeStreams and UnsubscribeStreams,
+// the request message sent by the functions SubscribeTables and UnsubscribeTables,
 // it returns true if the validation is successful.
 func validateSubsReq(req []byte, payload wsMessage) bool {
 	request := struct {
@@ -751,35 +737,16 @@ func validateAuthReq(req []byte, payload wsMessage) bool {
 	return false
 }
 
-// validateCancelAllAfterReq verifies if the request field on the incoming socket message is the same as that of
-// the request message sent by cancelAllAfter function, it returns true if the validation is successful.
-func validateCancelAllAfterReq(req []byte, payload wsMessage) bool {
-	request := struct {
-		Op   string `json:"op,omitempty"`
-		Args int    `json:"args,omitempty"`
-	}{}
-
-	if err := json.Unmarshal(req, &request); err == nil {
-		if request.Op == payload.Op {
-			if request.Args == payload.Args.(int) {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-// handleSocketMsg processes the message from websocket, extract the payload byte and send it over to sendCh.
+// extractPayload processes the message from websocket, extract the payload byte and send it over to sendCh.
 // This function should not be called concurrently as an unsubscribeConnection message from websocket can
 // provoke this function to call stop() which would prevent the previous messages from ever reaching to sendCh
 // It is absolutely critical that the caller receives all messages for the client up until the last message
 // of unsubscribe connection from the socket
-func (c *wsClient) handleSocketMsg(msg []interface{}, logger *log.Logger) ([]byte, bool) {
+func (c *WSClient) extractPayload(msg []interface{}, logger *log.Logger) ([]byte, bool) {
 	if len(msg) <= 3 {
 		if v, ok := msg[0].(float64); ok {
 			if v == 2 {
-				go c.stop("websocket")
+				go c.stop("Websocket Sent a Unsubscribe message on multiplexed connection")
 				return nil, false
 			}
 		}
@@ -795,3 +762,358 @@ func (c *wsClient) handleSocketMsg(msg []interface{}, logger *log.Logger) ([]byt
 
 	return payload, true
 }
+
+// standard syntax of payload
+type wsMessage struct {
+	Op   string      `json:"op,omitempty"`
+	Args interface{} `json:"args,omitempty"`
+}
+
+func (c *WSClient) RateLimited(timeToSleep time.Duration, tokens int) {
+	fmt.Println("^^^^^^^^^^^^^^^^^^^^Rate Limit Exceeded^^^^^^^^^^^^^^^^^^^^")
+	defer c.bucketM.SetBurst(tokens)
+
+	c.bucketM.SetBurst(0)
+	// wait for at least 3 seconds in case of being rate limited
+	t := time.NewTimer(timeToSleep + time.Second*3)
+
+	select {
+	case <-t.C:
+	case <-c.Done:
+	}
+}
+
+type pubSub struct {
+	ch   chan []byte
+	done <-chan struct{}
+}
+
+func (c *WSClient) subscribe(ctx context.Context, ch chan []byte) {
+	c.subscriptionsMu.Lock()
+	defer c.subscriptionsMu.Unlock()
+	p := pubSub{
+		ch:   ch,
+		done: ctx.Done(),
+	}
+	c.subscriptions = append(c.subscriptions, p)
+}
+
+func (c *WSClient) publish(msg []byte) {
+	c.subscriptionsMu.Lock()
+	defer c.subscriptionsMu.Unlock()
+
+	if len(c.subscriptions) == 0 {
+		return
+	}
+
+	//fmt.Println("Publish: ", c.id, len(c.subscriptions), string(msg))
+
+	//https://stackoverflow.com/questions/20545743/how-to-remove-items-from-a-slice-while-ranging-over-it
+	k := 0 // output index
+	for i := range c.subscriptions {
+		select {
+		case <-c.subscriptions[i].done:
+		case c.subscriptions[i].ch <- msg:
+			c.subscriptions[k] = c.subscriptions[i]
+			k++
+		}
+	}
+	c.subscriptions = c.subscriptions[:k]
+}
+
+// UnsubscribeTables it is to unsubscribe counterpart of SubscribeTables
+// They are implemented in the same way, use this function to unsubscribe already subscribed tables.
+//func (c *WSClient) UnsubscribeTables(ctx context.Context, unSubs ...string) error {
+//	// This API is implemented the same way as of SubscribeTables
+//
+//	select {
+//	case <-c.Done:
+//		select {
+//		case <-c.SocketDone:
+//			return ErrWSConnClosed
+//		default:
+//			return ErrWSClientClosed
+//		}
+//	default:
+//	}
+//
+//	c.subsMu.Lock()
+//	defer func() {
+//		c.unSubsSignal = nil
+//		for len(c.unSubsData) > 0 {
+//			<-c.unSubsData
+//		}
+//		c.subsMu.Unlock()
+//	}()
+//
+//	// preparing message for multiplexed socket connection
+//	message := make([]interface{}, 0, 4)
+//	payload := wsMessage{
+//		Op: "unsubscribe",
+//	}
+//	payload.Args = unSubs
+//	message = append(message, 0, c.config.Key, c.topic, payload)
+//	msgByte, _ := json.Marshal(message)
+//
+//	ctxWait, cancelWait := context.WithCancel(ctx)
+//	defer cancelWait()
+//
+//	go func() {
+//		select {
+//		case <-ctxWait.Done():
+//		case <-c.Done:
+//			cancelWait()
+//		}
+//	}()
+//
+//	if err := c.bucketM.WaitN(ctxWait, len(unSubs)); err != nil {
+//		return err
+//	}
+//
+//	ctxConf, cancelConf := context.WithTimeout(ctxWait, wsConfirmTimeout)
+//	defer cancelConf()
+//
+//	select {
+//	case <-c.Done:
+//		select {
+//		case <-c.SocketDone:
+//			return ErrWSConnClosed
+//		default:
+//			return ErrWSClientClosed
+//		}
+//	default:
+//		select {
+//		case <-c.Done:
+//			select {
+//			case <-c.SocketDone:
+//				return ErrWSConnClosed
+//			default:
+//				return ErrWSClientClosed
+//			}
+//		case c.connWriter <- msgByte:
+//		}
+//	}
+//
+//	c.unSubsSignal = make(chan struct{})
+//	close(c.unSubsSignal)
+//
+//	retChan := make(chan error)
+//
+//	num := len(unSubs)
+//
+//	for {
+//		select {
+//		case res := <-c.unSubsData:
+//			go func(ctxConf context.Context, retChan chan<- error, res []byte, payload wsMessage) {
+//				if request, ok := requestField(res); ok && validateSubsReq(request, payload) {
+//					if isSuccessful(res) {
+//						select {
+//						case retChan <- nil:
+//							return
+//						case <-ctxConf.Done():
+//							return
+//						}
+//					}
+//					select {
+//					case retChan <- c.wsError(res):
+//						return
+//					case <-ctxConf.Done():
+//						return
+//					}
+//				}
+//			}(ctxConf, retChan, res, payload)
+//		case err := <-retChan:
+//			num--
+//			if err != nil {
+//				// retry if the error is 429 or 503
+//				if err2 := errors.Cause(err); err2 == ErrTooManyRequests || err2 == ErrServerOverloaded {
+//					time.Sleep(time.Millisecond * 500)
+//					return c.UnsubscribeTables(ctx, unSubs...)
+//				}
+//
+//				if errors.Cause(err) == ErrBadRequest {
+//					return nil
+//				}
+//
+//				return err
+//			}
+//			if num == 0 {
+//				return nil
+//			}
+//		case <-ctxConf.Done():
+//			return ErrWSVerificationTimeout
+//		case <-c.Done:
+//			select {
+//			case <-c.SocketDone:
+//				return ErrWSConnClosed
+//			default:
+//				return ErrWSClientClosed
+//			}
+//		}
+//	}
+//}
+//// CancelAllAfter implements the cancelAllAfter subscription message of the websocket
+//func (c *WSClient) CancelAllAfter(ctx context.Context, timeout time.Duration) error {
+//	// This API is implemented in the very similar way as that of SubscribeTables
+//	// This message consumes one token from the request limiter
+//	// It does not need num variable as there is only one expected message from websocket
+//
+//	select {
+//	case <-c.Done:
+//		return ErrWSClientClosed
+//	default:
+//	}
+//
+//	c.cancelMu.Lock()
+//	defer func() {
+//		c.cancelAfterSignal = nil
+//		for len(c.cancelAfterData) > 0 {
+//			<-c.cancelAfterData
+//		}
+//		c.cancelMu.Unlock()
+//	}()
+//
+//	msg := make([]interface{}, 0, 4)
+//	payload := wsMessage{
+//		Op: "cancelAllAfter",
+//	}
+//	payload.Args = timeout.Milliseconds()
+//	msg = append(msg, 0, c.config.Key, c.topic, payload)
+//	msgByte, _ := json.Marshal(msg)
+//
+//	ctxWait, cancelWait := context.WithCancel(ctx)
+//	defer cancelWait()
+//
+//	go func() {
+//		select {
+//		case <-ctxWait.Done():
+//		case <-c.Done:
+//			cancelWait()
+//		}
+//	}()
+//
+//	if err := c.bucketM.Wait(ctxWait); err != nil {
+//		return err
+//	}
+//
+//	ctxConf, cancelConf := context.WithTimeout(ctxWait, wsConfirmTimeout)
+//	defer cancelConf()
+//
+//	select {
+//	case <-c.Done:
+//		return ErrWSClientClosed
+//	default:
+//		select {
+//		case <-c.Done:
+//			return ErrWSClientClosed
+//		case c.connWriter <- msgByte:
+//		}
+//	}
+//
+//	c.cancelAfterSignal = make(chan struct{})
+//	close(c.cancelAfterSignal)
+//
+//	retChan := make(chan error)
+//
+//	// custom successful function for cancelAllAfter
+//	isSuccess := func(data []byte) bool {
+//		var res map[string]string
+//		_ = json.Unmarshal(data, &res)
+//		_, ok := res["cancelTime"]
+//		return ok
+//	}
+//
+//	for {
+//		select {
+//		case res := <-c.cancelAfterData:
+//			go func(ctxConf context.Context, retChan chan<- error, res []byte, payload wsMessage) {
+//				if request, ok := requestField(res); ok {
+//					if validateCancelAllAfterReq(request, payload) {
+//						if isSuccess(res) {
+//							select {
+//							case retChan <- nil:
+//								return
+//							case <-ctxConf.Done():
+//								return
+//							}
+//						}
+//						select {
+//						case retChan <- c.wsError(res):
+//							return
+//						case <-ctxConf.Done():
+//							return
+//						}
+//					}
+//				}
+//			}(ctxConf, retChan, res, payload)
+//		case err := <-retChan:
+//			return err
+//		case <-ctxConf.Done():
+//			return ErrWSVerificationTimeout
+//		case <-c.Done:
+//			return ErrWSClientClosed
+//		}
+//	}
+//
+//}
+//
+////func (c *WSClient) AutoCancelAllAfter(ctx context.Context, timeout time.Duration, every time.Duration) {
+////	burstOffset := int64(math.Ceil(1 / every.Minutes()))
+////	m := make(chan int64)
+////	go func() {
+////		defer close(m)
+////		for {
+////			select {
+////			case m <- burstOffset:
+////			case <-c.done:
+////			}
+////		}
+////	}()
+////}
+//// validateCancelAllAfterReq verifies if the request field on the incoming socket message is the same as that of
+//// the request message sent by cancelAllAfter function, it returns true if the validation is successful.
+//func validateCancelAllAfterReq(req []byte, payload wsMessage) bool {
+//	request := struct {
+//		Op   string `json:"op,omitempty"`
+//		Args int64  `json:"args,omitempty"`
+//	}{}
+//
+//	if err := json.Unmarshal(req, &request); err == nil {
+//		if request.Op == payload.Op {
+//			if request.Args == payload.Args.(int64) {
+//				return true
+//			}
+//		}
+//	}
+//
+//	return false
+//}
+// toWriterFunc sends the processed payload data to the one of the socket writer functions SubscribeTables,
+// UnsubscribeTables, Authenticate, CancelAllAfter, these messages are sent so the writer function can verify if
+// their request was successful or not signal channels are closed by the writer functions when the data
+// sending starts
+//func (c *WSClient) toWriterFunc(data []byte) {
+//	select {
+//	case <-c.subsSignal:
+//		c.subsData <- data
+//	default:
+//	}
+//
+//	select {
+//	case <-c.unSubsSignal:
+//		c.unSubsData <- data
+//	default:
+//	}
+//
+//	select {
+//	case <-c.authSignal:
+//		c.authData <- data
+//	default:
+//	}
+//
+//	select {
+//	case <-c.cancelAfterSignal:
+//		c.cancelAfterData <- data
+//	default:
+//	}
+//}

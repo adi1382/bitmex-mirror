@@ -99,6 +99,10 @@ func (o Time) MarshalJSON() (data []byte, err error) {
 
 // UnmarshalJSON unmarshals the JSON into a value wrapped by this optional.
 func (o *Time) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		*o = nil
+		return nil
+	}
 	var v time.Time
 	err := json.Unmarshal(data, &v)
 	if err != nil {

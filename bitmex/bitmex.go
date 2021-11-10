@@ -1,28 +1,66 @@
 package bitmex
 
 import (
-	"context"
-	"github.com/bitmex-mirror/auth"
-	"github.com/pkg/errors"
-	"log"
 	"time"
 
 	"golang.org/x/time/rate"
 
+	"github.com/bitmex-mirror/auth"
 	"github.com/valyala/fasthttp"
 )
 
-const RequestTimeout = time.Second * 10              // Used to create API Expires
+type Error string
+
+func (e Error) Error() string { return string(e) }
+
+const ErrServerOverloaded = Error("server overloaded")
+const ErrBadRequest = Error("bad request")
+const ErrInvalidAPIKey = Error("invalid API key")
+const ErrTooManyRequests = Error("too many requests")
+const ErrWSConnClosed = Error("websocket connection closed")
+const ErrWSClientClosed = Error("websocket client closed")
+const ErrWSVerificationTimeout = Error("context canceled/timeout: message sent but could not verify")
+const ErrUnexpectedError = Error("unexpected error")
+const ErrRequestExpired = Error("request expired")
+const ErrClientError = Error("client error (400<=code<500)")
+const ErrServerError = Error("client error (500<=code<600)")
+
+const requestTimeout = time.Second * 10              // Used to create API Expires
 const wsConfirmTimeout = time.Second * 15            // time to wait for confirmation message on websocket send
 const restEndpoint = "www.bitmex.com/api/v1"         // rest endpoint for mainnet
 const restTestEndpoint = "testnet.bitmex.com/api/v1" // rest endpoint for testnet
 const wsEndpoint = "ws.bitmex.com"                   // websocket endpoint for mainnet
 const wsTestEndpoint = "ws.testnet.bitmex.com"       // websocket endpoint for testnet
-const rateLimitMinuteCap = 120                       // capacity for one minute request limits
-const rateLimitSecondCap = 10                        // capacity for one second request limits on certain routes
+const rateLimitMinuteCap = 120                       // default capacity for one minute request limiter
+const rateLimitSecondCap = 10                        // default capacity for one second request limiter
 const websocketConnectionTimeout = time.Second * 15  // timeout when attempting to establish websocket connection
 const pingPeriod = time.Second * 5                   // time to ping from receiving the last message over websocket
 const pongTimeout = time.Second * 3                  // wait time to receive pong after sending ping
+
+const OrderStatusNew = "New"
+const OrderStatusPartiallyFilled = "PartiallyFilled"
+const OrderStatusFilled = "Filled"
+const OrderStatusCanceled = "Canceled"
+const OrderStatusRejected = "Rejected"
+
+const OrderSideBuy = "Buy"
+const OrderSideSell = "Sell"
+
+const OrderTypeLimit = "Limit"
+const OrderTypeMarket = "Market"
+const OrderTypeStop = "Stop"
+const OrderTypeStopLimit = "StopLimit"
+const OrderTypeStopMarket = "StopMarket"
+const OrderTypeTrailingStop = "TrailingStop"
+
+const WSDataActionPartial = "partial"
+const WSDataActionUpdate = "update"
+const WSDataActionInsert = "insert"
+const WSDataActionDelete = "delete"
+
+const WSTableOrder = "order"
+const WSTablePosition = "position"
+const WSTableMargin = "margin"
 
 func NewBitmex(test bool) *Bitmex {
 	b := Bitmex{
@@ -60,11 +98,11 @@ type Bitmex struct {
 	httpC   *fasthttp.Client
 }
 
-// NewRestClient provides a variable of type *restClient which provides a method set to call
+// NewRestClient provides a variable of type *RestClient which provides a method set to call
 // relevant rest APIs
-func (b *Bitmex) NewRestClient(config auth.Config) *restClient {
+func (b *Bitmex) NewRestClient(config auth.Config) *RestClient {
 
-	c := restClient{
+	c := RestClient{
 		auth:    config,
 		bucketM: b.bucketM,
 		bucketS: b.bucketS,
@@ -76,63 +114,4 @@ func (b *Bitmex) NewRestClient(config auth.Config) *restClient {
 		c.endpoint = restEndpoint
 	}
 	return &c
-}
-
-// NewWSConnection create a new multiplexed websocket connection and returns a variable to provide method set to
-// add and authenticate several account on the connection.
-func (b *Bitmex) NewWSConnection(ctx context.Context, logger *log.Logger) (*wSConnection, error) {
-	var ws wSConnection
-
-	if b.test {
-		ws.host = wsTestEndpoint
-	} else {
-		ws.host = wsEndpoint
-	}
-
-	ws.bucketM = b.bucketM
-
-	ws.done = make(chan struct{})
-
-	ctx2, cancel := context.WithTimeout(ctx, websocketConnectionTimeout)
-	defer cancel()
-
-	conn, err := connect(ctx2, ws.host)
-	if err != nil {
-		close(ws.done)
-		return nil, errors.Wrap(err, "ws connection failed to connect")
-	}
-	ws.conn = conn
-
-	chWrite := make(chan []byte, 100)
-	chRead := make(chan []byte, 100)
-	ws.clients = make(map[string]*wsClient, 5)
-	ws.removeClient = make(chan string)
-
-	ws.chRead = chRead
-	ws.chWrite = chWrite
-	ws.pingPeriod = pingPeriod
-	ws.pongTimeout = pongTimeout
-
-	if ws.pingPeriod < ws.pongTimeout {
-		panic("ping period cannot be smaller than pong timeout")
-	}
-
-	ws.pingTicker = time.NewTicker(ws.pingPeriod)
-
-	ws.pongTimer = time.NewTimer(time.Hour)
-	if !ws.pongTimer.Stop() {
-		<-ws.pongTimer.C
-	}
-
-	ws.conn.SetPongHandler(func(string) error {
-		if !ws.pongTimer.Stop() {
-			_ = ws.conn.Close()
-		}
-		return nil
-	})
-
-	// Reader will start writer and router
-	go ws.connectionReader(ctx, chRead, chWrite, logger)
-
-	return &ws, err
 }

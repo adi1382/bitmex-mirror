@@ -4,58 +4,93 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
-	"4d63.com/optional"
+	"github.com/bitmex-mirror/optional"
 	"github.com/valyala/fasthttp"
 )
 
+//type Order struct {
+//	Account               int64     `json:"account"`
+//	AvgPx                 float64   `json:"avgPx"`
+//	ClOrdID               string    `json:"clOrdID"`
+//	ClOrdLinkID           string    `json:"clOrdLinkID"`
+//	ContingencyType       string    `json:"contingencyType"`
+//	CumQty                float64   `json:"cumQty"`
+//	Currency              string    `json:"currency"`
+//	DisplayQty            float64   `json:"displayQty"`
+//	ExDestination         string    `json:"exDestination"`
+//	ExecInst              string    `json:"execInst"`
+//	LeavesQty             float64   `json:"leavesQty"`
+//	MultiLegReportingType string    `json:"multiLegReportingType"`
+//	OrdRejReason          string    `json:"ordRejReason"`
+//	OrdStatus             string    `json:"ordStatus"`
+//	OrdType               string    `json:"ordType"`
+//	OrderID               string    `json:"orderID"`
+//	OrderQty              float64   `json:"orderQty"`
+//	PegOffsetValue        float64   `json:"pegOffsetValue"`
+//	PegPriceType          string    `json:"pegPriceType"`
+//	Price                 float64   `json:"price"`
+//	SettlCurrency         string    `json:"settlCurrency"`
+//	Side                  string    `json:"side"`
+//	SimpleCumQty          float64   `json:"simpleCumQty"`
+//	SimpleLeavesQty       float64   `json:"simpleLeavesQty"`
+//	SimpleOrderQty        float64   `json:"simpleOrderQty"`
+//	StopPx                float64   `json:"stopPx"`
+//	Symbol                string    `json:"symbol"`
+//	Text                  string    `json:"text"`
+//	TimeInForce           string    `json:"timeInForce"`
+//	Timestamp             time.Time `json:"timestamp"`
+//	TransactTime          time.Time `json:"transactTime"`
+//	Triggered             string    `json:"triggered"`
+//	WorkingIndicator      bool      `json:"workingIndicator"`
+//}
+
 type Order struct {
-	OrderID               string    `json:"orderID"`
-	ClOrdID               string    `json:"clOrdID"`
-	ClOrdLinkID           string    `json:"clOrdLinkID"`
-	Account               int       `json:"account"`
-	Symbol                string    `json:"symbol"`
-	Side                  string    `json:"side"`
-	SimpleOrderQty        int       `json:"simpleOrderQty"`
-	OrderQty              int       `json:"orderQty"`
-	Price                 int       `json:"price"`
-	DisplayQty            int       `json:"displayQty"`
-	StopPx                int       `json:"stopPx"`
-	PegOffsetValue        int       `json:"pegOffsetValue"`
-	PegPriceType          string    `json:"pegPriceType"`
-	Currency              string    `json:"currency"`
-	SettlCurrency         string    `json:"settlCurrency"`
-	OrdType               string    `json:"ordType"`
-	TimeInForce           string    `json:"timeInForce"`
-	ExecInst              string    `json:"execInst"`
-	ContingencyType       string    `json:"contingencyType"`
-	ExDestination         string    `json:"exDestination"`
-	OrdStatus             string    `json:"ordStatus"`
-	Triggered             string    `json:"triggered"`
-	WorkingIndicator      bool      `json:"workingIndicator"`
-	OrdRejReason          string    `json:"ordRejReason"`
-	SimpleLeavesQty       int       `json:"simpleLeavesQty"`
-	LeavesQty             int       `json:"leavesQty"`
-	SimpleCumQty          int       `json:"simpleCumQty"`
-	CumQty                int       `json:"cumQty"`
-	AvgPx                 int       `json:"avgPx"`
-	MultiLegReportingType string    `json:"multiLegReportingType"`
-	Text                  string    `json:"text"`
-	TransactTime          time.Time `json:"transactTime"`
-	Timestamp             time.Time `json:"timestamp"`
+	Account               int64            `json:"account"`
+	AvgPx                 optional.Float64 `json:"avgPx"`
+	ClOrdID               optional.String  `json:"clOrdID"`
+	ClOrdLinkID           optional.String  `json:"clOrdLinkID"`
+	ContingencyType       optional.String  `json:"contingencyType"`
+	CumQty                optional.Float64 `json:"cumQty"`
+	Currency              optional.String  `json:"currency"`
+	DisplayQty            optional.Float64 `json:"displayQty"`
+	ExDestination         optional.String  `json:"exDestination"`
+	ExecInst              optional.String  `json:"execInst"`
+	LeavesQty             optional.Float64 `json:"leavesQty"`
+	MultiLegReportingType optional.String  `json:"multiLegReportingType"`
+	OrdRejReason          optional.String  `json:"ordRejReason"`
+	OrdStatus             optional.String  `json:"ordStatus"`
+	OrdType               optional.String  `json:"ordType"`
+	OrderID               string           `json:"orderID"`
+	OrderQty              optional.Float64 `json:"orderQty"`
+	PegOffsetValue        optional.Float64 `json:"pegOffsetValue"`
+	PegPriceType          optional.String  `json:"pegPriceType"`
+	Price                 optional.Float64 `json:"price"`
+	SettlCurrency         optional.String  `json:"settlCurrency"`
+	Side                  optional.String  `json:"side"`
+	SimpleCumQty          optional.Float64 `json:"simpleCumQty"`
+	SimpleLeavesQty       optional.Float64 `json:"simpleLeavesQty"`
+	SimpleOrderQty        optional.Float64 `json:"simpleOrderQty"`
+	StopPx                optional.Float64 `json:"stopPx"`
+	Symbol                optional.String  `json:"symbol"`
+	Text                  optional.String  `json:"text"`
+	TimeInForce           optional.String  `json:"timeInForce"`
+	Timestamp             optional.Time    `json:"timestamp"`
+	TransactTime          optional.Time    `json:"transactTime"`
+	Triggered             optional.String  `json:"triggered"`
+	WorkingIndicator      optional.Bool    `json:"workingIndicator"`
 }
 
 // GetOrders --
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-func (c *restClient) GetOrders(ctx context.Context, req ReqToGetOrders) (RespToGetOrders, error) {
+func (c *RestClient) GetOrders(ctx context.Context, req ReqToGetOrders) (RespToGetOrders, error) {
 	err := c.bucketM.Wait(ctx)
 	if err != nil {
 		return RespToGetOrders{}, err
 	}
-	var response RespToGetOrders
+	var response []Order
 	err = c.request(req, &response)
 	return response, err
 }
@@ -66,8 +101,8 @@ type ReqToGetOrders struct {
 	Symbol    string                 `json:"symbol,omitempty"`
 	Filter    map[string]interface{} `json:"filter,omitempty"`
 	Columns   string                 `json:"columns,omitempty"`
-	Count     int                    `json:"count,omitempty"`
-	Start     int                    `json:"start,omitempty"`
+	Count     int64                  `json:"count,omitempty"`
+	Start     int64                  `json:"start,omitempty"`
 	Reverse   optional.Bool          `json:"reverse,omitempty"`
 	StartTime optional.Time          `json:"startTime,omitempty"`
 	EndTime   optional.Time          `json:"endTime,omitempty"`
@@ -95,7 +130,7 @@ func (req ReqToGetOrders) payload() (string, error) {
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-func (c *restClient) AmendOrder(ctx context.Context, req ReqToAmendOrder) (RespToAmendOrder, error) {
+func (c *RestClient) AmendOrder(ctx context.Context, req ReqToAmendOrder) (RespToAmendOrder, error) {
 	err := c.bucketM.Wait(ctx)
 	if err != nil {
 		return RespToAmendOrder{}, err
@@ -144,7 +179,7 @@ func (req ReqToAmendOrder) payload() (string, error) {
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-func (c *restClient) PlaceOrder(ctx context.Context, req ReqToPlaceOrder) (RespToPlaceOrder, error) {
+func (c *RestClient) PlaceOrder(ctx context.Context, req ReqToPlaceOrder) (RespToPlaceOrder, error) {
 	err := c.bucketM.Wait(ctx)
 	if err != nil {
 		return RespToPlaceOrder{}, err
@@ -197,7 +232,7 @@ func (req ReqToPlaceOrder) payload() (string, error) {
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-func (c *restClient) CancelOrders(ctx context.Context, req ReqToCancelOrders) (RespToCancelOrders, error) {
+func (c *RestClient) CancelOrders(ctx context.Context, req ReqToCancelOrders) (RespToCancelOrders, error) {
 	err := c.bucketM.Wait(ctx)
 	if err != nil {
 		return RespToCancelOrders{}, err
@@ -211,7 +246,7 @@ func (c *restClient) CancelOrders(ctx context.Context, req ReqToCancelOrders) (R
 	return response, err
 }
 
-type RespToCancelOrders Order
+type RespToCancelOrders []Order
 
 type ReqToCancelOrders struct {
 	OrderIDs []string `json:"orderID,omitempty"`
@@ -240,7 +275,7 @@ func (req ReqToCancelOrders) payload() (string, error) {
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-func (c *restClient) CancelAllOrders(ctx context.Context, req ReqToCancelAllOrders) (RespToCancelAllOrders, error) {
+func (c *RestClient) CancelAllOrders(ctx context.Context, req ReqToCancelAllOrders) (RespToCancelAllOrders, error) {
 	err := c.bucketM.Wait(ctx)
 	if err != nil {
 		return RespToCancelAllOrders{}, err
@@ -282,7 +317,7 @@ func (req ReqToCancelAllOrders) payload() (string, error) {
 // CancelAllAfter implements the cancelAllAfter method
 // https://www.bitmex.com/api/explorer/#!/Order/Order_cancelAllAfter
 // POST /order/cancelAllAfter
-func (c *restClient) CancelAllAfter(ctx context.Context, req ReqToCancelAllAfter) (RespToCancelAllAfter, error) {
+func (c *RestClient) CancelAllAfter(ctx context.Context, req ReqToCancelAllAfter) (RespToCancelAllAfter, error) {
 	var response RespToCancelAllAfter
 	err := c.bucketM.Wait(ctx)
 	if err != nil {

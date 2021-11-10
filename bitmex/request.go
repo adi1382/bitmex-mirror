@@ -10,7 +10,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-func (c *restClient) request(req Requester, results interface{}) error {
+func (c *RestClient) request(req Requester, results interface{}) error {
 	res, err := c.do(req)
 
 	defer fasthttp.ReleaseResponse(res)
@@ -25,7 +25,7 @@ func (c *restClient) request(req Requester, results interface{}) error {
 	return nil
 }
 
-func (c *restClient) newRequest(r Requester) (*fasthttp.Request, error) {
+func (c *RestClient) newRequest(r Requester) (*fasthttp.Request, error) {
 	method := r.method()
 	path := r.path()
 	query, err := r.query()
@@ -66,7 +66,7 @@ func (c *restClient) newRequest(r Requester) (*fasthttp.Request, error) {
 	return req, nil
 }
 
-func (c *restClient) do(r Requester) (*fasthttp.Response, error) {
+func (c *RestClient) do(r Requester) (*fasthttp.Response, error) {
 	req, err := c.newRequest(r)
 	if err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ func (c *restClient) do(r Requester) (*fasthttp.Response, error) {
 		apiError := new(APIError)
 		err := json.Unmarshal(res.Body(), apiError)
 		fmt.Println(apiError)
-		apiError.StatusCode = res.StatusCode()
+		apiError.StatusCode = int64(res.StatusCode())
 		fmt.Println(apiError)
 		if err != nil {
 			fmt.Println("decode failed")
@@ -118,7 +118,7 @@ func decode(res *fasthttp.Response, out interface{}) error {
 	}
 }
 
-func (c *restClient) prepareSignature(path, method, query, payload, apiExpires string) string {
+func (c *RestClient) prepareSignature(path, method, query, payload, apiExpires string) string {
 	signatureBody := method + "/api/v1" + path
 
 	if query != "" {

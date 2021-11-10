@@ -6,7 +6,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-type restClient struct {
+type RestClient struct {
 	auth     auth.Config
 	endpoint string
 	bucketM  *rate.Limiter

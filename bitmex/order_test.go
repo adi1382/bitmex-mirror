@@ -11,7 +11,7 @@ package bitmex
 //)
 //
 ////func BenchmarkOpt(b *testing.B) {
-////	c := restClient{}
+////	c := RestClient{}
 ////
 ////	for n := 0; n < b.N; n++ {
 ////		_, err := c.AmendOrderRequest().OrderID("DF").OrderQty(123).payload()
@@ -135,7 +135,7 @@ package bitmex
 ////}
 ////
 ////func TestClient_AmendOrderRequestPayload(t *testing.T) {
-////	c := restClient{}
+////	c := RestClient{}
 ////
 ////	payload, err := c.AmendOrderRequest().OrderID("FF").OrderQty(100).Price(0).payload()
 ////	if err != nil {
@@ -149,7 +149,7 @@ package bitmex
 ////}
 ////
 ////func TestClient_PlaceOrderRequestPayload(t *testing.T) {
-////	c := restClient{}
+////	c := RestClient{}
 ////	payload, err := c.PlaceOrderRequest().OrderQty(100).DisplayQty(0).Symbol("XBTUSD").payload()
 ////	if err != nil {
 ////		t.Errorf("payload generate error")
@@ -163,7 +163,7 @@ package bitmex
 ////}
 ////
 ////func TestClient_CancelOrdersRequestPayload(t *testing.T) {
-////	c := restClient{}
+////	c := RestClient{}
 ////	payload, err := c.CancelOrdersRequest().AddOrderIDs("abc", "def").payload()
 ////	if err != nil {
 ////		t.Errorf("payload generate error")
@@ -176,7 +176,7 @@ package bitmex
 ////}
 ////
 ////func TestClient_CancelAllOrdersRequestPayload(t *testing.T) {
-////	c := restClient{}
+////	c := RestClient{}
 ////	payload, err := c.CancelAllOrdersRequest().Symbol("XBTUSD").Filter(map[string]interface{}{"side": "Buy"}).payload()
 ////	if err != nil {
 ////		t.Errorf("payload generate error")
@@ -189,7 +189,7 @@ package bitmex
 ////}
 ////
 ////func TestClient_AmendBulkOrdersRequestPayload(t *testing.T) {
-////	c := restClient{}
+////	c := RestClient{}
 ////
 ////	payload, err := c.AmendBulkOrdersRequest().AddAmendedOrder(
 ////		c.AmendOrderRequest().OrderID("abc").Price(0),
@@ -210,7 +210,7 @@ package bitmex
 ////}
 ////
 ////func TestClient_CancelAllAfterRequestPayload(t *testing.T) {
-////	c := restClient{}
+////	c := RestClient{}
 ////
 ////	payload, err := c.CancelAllAfterRequest().Timeout(0).payload()
 ////	if err != nil {
