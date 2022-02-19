@@ -8,7 +8,7 @@ import (
 	"github.com/bitmex-mirror/optional"
 )
 
-//func (a *account) updateFromSocket(ctx context.Context, logger *log.Logger) {
+//func (a *Account) updateFromSocket(ctx context.Context, logger *log.Logger) {
 //	for {
 //		select {
 //		case <-ctx.Done():
@@ -23,7 +23,7 @@ import (
 //	}
 //}
 
-func (a *account) handleMessage(data []byte, logger *log.Logger) {
+func (a *Account) handleMessage(data []byte, logger *log.Logger) {
 	var msg struct {
 		Table  string            `json:"table"`
 		Action string            `json:"action"`
@@ -45,7 +45,7 @@ func (a *account) handleMessage(data []byte, logger *log.Logger) {
 	}
 }
 
-func (a *account) handleOrderMessage(data []json.RawMessage, action string, logger *log.Logger) {
+func (a *Account) handleOrderMessage(data []json.RawMessage, action string, logger *log.Logger) {
 	switch action {
 	case bitmex.WSDataActionPartial:
 		a.handlePartialOrderMessage(data, logger)
@@ -58,9 +58,17 @@ func (a *account) handleOrderMessage(data []json.RawMessage, action string, logg
 	}
 }
 
-func (a *account) handlePartialOrderMessage(data []json.RawMessage, logger *log.Logger) {
+func (a *Account) handlePartialOrderMessage(data []json.RawMessage, logger *log.Logger) {
 	a.ordersMu.Lock()
 	defer a.ordersMu.Unlock()
+
+	// Increment partialsReceived to signal that the partial data of order is received and processed to activeOrders
+	defer func() {
+		a.partialsCond.L.Lock()
+		a.partialsOrder = true
+		a.partialsCond.Broadcast()
+		a.partialsCond.L.Unlock()
+	}()
 
 	a.activeOrders = a.activeOrders[:0]
 
@@ -79,7 +87,7 @@ func (a *account) handlePartialOrderMessage(data []json.RawMessage, logger *log.
 	}
 }
 
-func (a *account) handleInsertOrderMessage(data []json.RawMessage, logger *log.Logger) {
+func (a *Account) handleInsertOrderMessage(data []json.RawMessage, logger *log.Logger) {
 	a.ordersMu.Lock()
 	defer a.ordersMu.Unlock()
 
@@ -125,7 +133,7 @@ func (a *account) handleInsertOrderMessage(data []json.RawMessage, logger *log.L
 	}
 }
 
-func (a *account) handleUpdateOrderMessage(data []json.RawMessage, logger *log.Logger) {
+func (a *Account) handleUpdateOrderMessage(data []json.RawMessage, logger *log.Logger) {
 	a.ordersMu.Lock()
 	defer a.ordersMu.Unlock()
 
@@ -162,7 +170,7 @@ func (a *account) handleUpdateOrderMessage(data []json.RawMessage, logger *log.L
 	}
 }
 
-func (a *account) handleDeleteOrderMessage(data []json.RawMessage, logger *log.Logger) {
+func (a *Account) handleDeleteOrderMessage(data []json.RawMessage, logger *log.Logger) {
 	a.ordersMu.Lock()
 	defer a.ordersMu.Unlock()
 
@@ -184,7 +192,7 @@ func (a *account) handleDeleteOrderMessage(data []json.RawMessage, logger *log.L
 	}
 }
 
-func (a *account) handlePositionMessage(data []json.RawMessage, action string, logger *log.Logger) {
+func (a *Account) handlePositionMessage(data []json.RawMessage, action string, logger *log.Logger) {
 	switch action {
 	case bitmex.WSDataActionPartial:
 		a.handlePartialPositionMessage(data, logger)
@@ -197,9 +205,17 @@ func (a *account) handlePositionMessage(data []json.RawMessage, action string, l
 	}
 }
 
-func (a *account) handlePartialPositionMessage(data []json.RawMessage, logger *log.Logger) {
+func (a *Account) handlePartialPositionMessage(data []json.RawMessage, logger *log.Logger) {
 	a.positionsMu.Lock()
 	defer a.positionsMu.Unlock()
+
+	// Increment partialsReceived to signal that the partial data of order is received and processed to positions
+	defer func() {
+		a.partialsCond.L.Lock()
+		a.partialsPosition = true
+		a.partialsCond.Broadcast()
+		a.partialsCond.L.Unlock()
+	}()
 
 	a.positions = a.positions[:0]
 
@@ -215,7 +231,7 @@ func (a *account) handlePartialPositionMessage(data []json.RawMessage, logger *l
 	}
 }
 
-func (a *account) handleInsertPositionMessage(data []json.RawMessage, logger *log.Logger) {
+func (a *Account) handleInsertPositionMessage(data []json.RawMessage, logger *log.Logger) {
 	a.positionsMu.Lock()
 	defer a.positionsMu.Unlock()
 
@@ -241,7 +257,7 @@ func (a *account) handleInsertPositionMessage(data []json.RawMessage, logger *lo
 	}
 }
 
-func (a *account) handleUpdatePositionMessage(data []json.RawMessage, logger *log.Logger) {
+func (a *Account) handleUpdatePositionMessage(data []json.RawMessage, logger *log.Logger) {
 	a.positionsMu.Lock()
 	defer a.positionsMu.Unlock()
 
@@ -267,7 +283,7 @@ func (a *account) handleUpdatePositionMessage(data []json.RawMessage, logger *lo
 	}
 }
 
-func (a *account) handleDeletePositionMessage(data []json.RawMessage, logger *log.Logger) {
+func (a *Account) handleDeletePositionMessage(data []json.RawMessage, logger *log.Logger) {
 	a.positionsMu.Lock()
 	defer a.positionsMu.Unlock()
 
@@ -289,7 +305,7 @@ func (a *account) handleDeletePositionMessage(data []json.RawMessage, logger *lo
 	}
 }
 
-func (a *account) handleMarginMessage(data []json.RawMessage, action string, logger *log.Logger) {
+func (a *Account) handleMarginMessage(data []json.RawMessage, action string, logger *log.Logger) {
 	switch action {
 	case bitmex.WSDataActionPartial:
 		a.handlePartialMarginMessage(data, logger)
@@ -302,9 +318,17 @@ func (a *account) handleMarginMessage(data []json.RawMessage, action string, log
 	}
 }
 
-func (a *account) handlePartialMarginMessage(data []json.RawMessage, logger *log.Logger) {
-	a.marginMu.Lock()
-	defer a.marginMu.Unlock()
+func (a *Account) handlePartialMarginMessage(data []json.RawMessage, logger *log.Logger) {
+	a.marginsMu.Lock()
+	defer a.marginsMu.Unlock()
+
+	// Increment partialsReceived to signal that the partial data of order is received and processed to margins
+	defer func() {
+		a.partialsCond.L.Lock()
+		a.partialsMargin = true
+		a.partialsCond.Broadcast()
+		a.partialsCond.L.Unlock()
+	}()
 
 	a.margins = a.margins[:0]
 
@@ -321,9 +345,9 @@ func (a *account) handlePartialMarginMessage(data []json.RawMessage, logger *log
 }
 
 // It is literally the same as partial margin message
-func (a *account) handleInsertMarginMessage(data []json.RawMessage, logger *log.Logger) {
-	a.marginMu.Lock()
-	defer a.marginMu.Unlock()
+func (a *Account) handleInsertMarginMessage(data []json.RawMessage, logger *log.Logger) {
+	a.marginsMu.Lock()
+	defer a.marginsMu.Unlock()
 
 	for i := range data {
 		var margin bitmex.Margin
@@ -348,9 +372,9 @@ func (a *account) handleInsertMarginMessage(data []json.RawMessage, logger *log.
 	}
 }
 
-func (a *account) handleUpdateMarginMessage(data []json.RawMessage, logger *log.Logger) {
-	a.marginMu.Lock()
-	defer a.marginMu.Unlock()
+func (a *Account) handleUpdateMarginMessage(data []json.RawMessage, logger *log.Logger) {
+	a.marginsMu.Lock()
+	defer a.marginsMu.Unlock()
 
 	for i := range data {
 		var margin bitmex.Margin
@@ -376,9 +400,9 @@ func (a *account) handleUpdateMarginMessage(data []json.RawMessage, logger *log.
 }
 
 // Hypothetical case, Bitmex would never send delete message for margin.
-// The number of items in margin is equal to the number of currencies in the account.
+// The number of items in margin is equal to the number of currencies in the Account.
 // Currently, there are only two currencies on Bitmex : USDT and XBT.
-func (a *account) handleDeleteMarginMessage(data []json.RawMessage, logger *log.Logger) {
+func (a *Account) handleDeleteMarginMessage(data []json.RawMessage, logger *log.Logger) {
 	logger.Println("No need to delete margin data, this should have never happened")
 	for i := range data {
 		logger.Println("Margin Delete Data", string(data[i]))

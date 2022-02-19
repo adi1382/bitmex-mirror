@@ -20,7 +20,7 @@ package pool
 //
 //	host.bitmex = bitmex.NewBitmex(id)
 //
-//	host.account = &account{
+//	host.Account = &Account{
 //		activeOrders:  make([]bitmex.Order, 0, 10),
 //		positions: make([]bitmex.Position, 0, 10),
 //		margins:       make([]bitmex.Margin, 0, 2),
@@ -36,7 +36,7 @@ package pool
 //
 //	host.config = config
 //	host.topic = topic
-//	wsClient, socketReceiver := host.connection.NewWSClient(ctx, config, topic, logger)
+//	wsClient, socketReceiver := host.connection.SubscribeNewClient(ctx, config, topic, logger)
 //
 //	wsReceiver := make(chan []byte, 100)
 //	go host.router(ctx, socketReceiver, wsReceiver)
@@ -65,13 +65,13 @@ package pool
 //	subs       []chan<- []byte
 //	subsMu     sync.Mutex
 //	done       chan struct{}
-//	*account
+//	*Account
 //}
 //
 //func (h *hostAccount) AddSubAccount(ctx context.Context, config auth.Config, logger *log.Logger) error {
 //	sub := subAccount{}
 //
-//	sub.account = &account{
+//	sub.Account = &Account{
 //		activeOrders:  make([]bitmex.Order, 0, 10),
 //		positions: make([]bitmex.Position, 0, 10),
 //		margins:       make([]bitmex.Margin, 0, 2),
@@ -80,7 +80,7 @@ package pool
 //
 //	var err error
 //
-//	wsClient, receiver := h.connection.NewWSClient(ctx, config, "", logger)
+//	wsClient, receiver := h.connection.SubscribeNewClient(ctx, config, "", logger)
 //	sub.wsUpdater = receiver
 //
 //	go sub.updateFromSocket(ctx, logger)
@@ -115,7 +115,7 @@ package pool
 //}
 //
 //func (h *hostAccount) restart(ctx context.Context, logger *log.Logger) (chan []byte, bool) {
-//	wsClient, socketReceiver := h.connection.NewWSClient(ctx, h.config, h.topic, logger)
+//	wsClient, socketReceiver := h.connection.SubscribeNewClient(ctx, h.config, h.topic, logger)
 //}
 //
 //func (h *hostAccount) router(ctx context.Context, socketReceiver <-chan []byte,

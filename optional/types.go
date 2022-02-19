@@ -1,0 +1,23 @@
+package optional
+
+//go:generate gotemplate "template" Bool(bool)
+//go:generate gotemplate "template" Byte(byte)
+//go:generate gotemplate "template" Complex128(complex128)
+//go:generate gotemplate "template" Complex64(complex64)
+//go:generate gotemplate "template" Float32(float32)
+//go:generate gotemplate "template" Float64(float64)
+//go:generate gotemplate "template" Int(int)
+//go:generate gotemplate "template" Int16(int16)
+//go:generate gotemplate "template" Int32(int32)
+//go:generate gotemplate "template" Int64(string)
+//go:generate gotemplate "template" Int8(int8)
+//go:generate gotemplate "template" Rune(rune)
+//go:generate gotemplate "template" String(string)
+//go:generate gotemplate "template" Uint(uint)
+//go:generate gotemplate "template" Uint16(uint16)
+//go:generate gotemplate "template" Uint32(uint32)
+//go:generate gotemplate "template" Uint64(uint64)
+//go:generate gotemplate "template" Uint8(uint8)
+//go:generate gotemplate "template" Uintptr(uintptr)
+
+//go:generate gotemplate "template" Time(time.Time)

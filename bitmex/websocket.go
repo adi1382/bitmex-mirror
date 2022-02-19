@@ -16,6 +16,10 @@ import (
 
 // NewWSConnection create a new multiplexed websocket connection and returns a variable to provide method set to
 // add and authenticate several account on the connection.
+// context can be used to set a timeout to establish the connection, default is 15 seconds.
+// canceling the context will return this function immediately, but does not guarantee that the connection is closed.
+// if this function returns a nil error, then you should call the Close() method on the returned *WSConnection
+// to close the connection properly freeing up resources.
 func (b *Bitmex) NewWSConnection(ctx context.Context, logger *log.Logger) (*WSConnection, error) {
 	var ws WSConnection
 
@@ -27,16 +31,21 @@ func (b *Bitmex) NewWSConnection(ctx context.Context, logger *log.Logger) (*WSCo
 
 	ws.bucketM = b.bucketM
 
-	ctx2, cancel := context.WithTimeout(ctx, websocketConnectionTimeout)
-	defer cancel()
+	var cancel context.CancelFunc
+	if _, ok := ctx.Deadline(); !ok {
+		ctx, cancel = context.WithTimeout(ctx, websocketConnectionTimeout)
+		defer cancel()
+	}
 
-	conn, err := connect(ctx2, ws.host)
+	conn, err := connect(ctx, ws.host)
 	if err != nil {
 		return nil, errors.Wrap(err, "ws connection failed to connect")
 	}
 
-	ws.Done = make(chan struct{})
+	done := make(chan struct{})
+	ws.Done = done
 	ws.conn = conn
+	ws.closing = make(chan string)
 
 	chWrite := make(chan []byte, 1)
 	chRead := make(chan []byte, 1)
@@ -66,16 +75,15 @@ func (b *Bitmex) NewWSConnection(ctx context.Context, logger *log.Logger) (*WSCo
 		return nil
 	})
 
-	// Reader will start writer and router
-	go ws.connectionReader(chRead, logger)
-	go ws.connectionWriter(ctx, chWrite, logger)
+	go ws.connectionReader(chRead, done, logger)
+	go ws.connectionWriter(chWrite, logger)
 	go ws.connectionRouter(logger)
 
 	return &ws, err
 }
 
 type WSConnection struct {
-	clLock       sync.RWMutex         // RW lock for clients
+	clientsMu    sync.RWMutex         // RW lock for clients
 	clients      map[string]*WSClient // hashmap of all clients on the multiplexed socket connection
 	host         string               // testnet or mainnet host url
 	conn         *websocket.Conn      // gorilla websocket connection
@@ -86,10 +94,12 @@ type WSConnection struct {
 	pongTimeout  time.Duration        // time after sending ping to get pong - input
 	pingTicker   *time.Ticker         // time to send ping after receiving last message
 	pongTimer    *time.Timer          // Expires when pong is not received
-	Done         chan struct{}        // closes when socket connection drops
+	Done         <-chan struct{}      // closes when socket connection drops
+	closing      chan string          // intermediary channel to close the connection
 	removeClient chan string          // receives a message from client to remove its api from clients
 }
 
+// IsOpen returns true if the websocket connection is open.
 func (ws *WSConnection) IsOpen() bool {
 	select {
 	case <-ws.Done:
@@ -99,17 +109,24 @@ func (ws *WSConnection) IsOpen() bool {
 	}
 }
 
-func (ws *WSConnection) connectionReader(chRead chan<- []byte, logger *log.Logger) {
-	defer func() {
-		//close(chRead)
-		close(ws.Done)
-	}()
+func (ws *WSConnection) Close() {
+	ws.close("outside caller")
+}
 
-	//ctxC, cancel := context.WithCancel(ctx)
-	//defer cancel()
-	//
-	//go ws.connectionWriter(ctxC, chWrite, logger)
-	//go ws.router(ctxC, logger)
+func (ws *WSConnection) close(by string) {
+	select {
+	case ws.closing <- by:
+		<-ws.Done
+	case <-ws.Done:
+	}
+}
+
+// connectionReader reads incoming messages from the websocket connection and sends them to the router.
+// It must be run as a goroutine.
+func (ws *WSConnection) connectionReader(chRead chan<- []byte, Done chan struct{}, logger *log.Logger) {
+	defer func() {
+		close(Done)
+	}()
 
 	for {
 		_, message, err := ws.conn.ReadMessage()
@@ -125,31 +142,25 @@ func (ws *WSConnection) connectionReader(chRead chan<- []byte, logger *log.Logge
 	}
 }
 
-func (ws *WSConnection) connectionWriter(ctx context.Context, chWrite <-chan []byte, logger *log.Logger) {
-
-	writeWait := 10 * time.Second
-	fastWriteWait := time.Second
+// connectionWriter writes outgoing messages to the websocket connection.
+// It also handles ping/pong messages, it must be run on its own goroutine.
+func (ws *WSConnection) connectionWriter(chWrite <-chan []byte, logger *log.Logger) {
 
 	defer func() {
+		// closing the connection will make the connectionReader return as ws.conn.ReadMessage() will return an error
 		_ = ws.conn.Close()
-		for len(chWrite) > 0 {
-			<-chWrite
-		}
 	}()
 
 	for {
 		select {
-		case <-ctx.Done():
-			// send close message to bitmex
-			_ = ws.conn.SetWriteDeadline(time.Now().Add(fastWriteWait))
-			_ = ws.conn.WriteMessage(websocket.CloseMessage, []byte{})
-			logger.Println("websocket: info: context canceled for ws connection, writer closed")
+		case by := <-ws.closing:
+			logger.Println("websocket: info: ws connection is being closed by: ", by)
 			return
 		case <-ws.Done:
 			logger.Println("websocket: info: ws writer returns because connection closed")
 			return
 		case message := <-chWrite:
-			_ = ws.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			_ = ws.conn.SetWriteDeadline(time.Now().Add(wsWriteTimeout))
 			err := ws.conn.WriteMessage(websocket.TextMessage, message)
 			if err != nil {
 				logger.Println("websocket: error: failed to write on ws")
@@ -169,7 +180,7 @@ func (ws *WSConnection) connectionWriter(ctx context.Context, chWrite <-chan []b
 				logger.Println("websocket: error: pong timer was not stopped by pong handler")
 				return
 			}
-			_ = ws.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			_ = ws.conn.SetWriteDeadline(time.Now().Add(wsWriteTimeout))
 			if err := ws.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				logger.Println("websocket: error: failed to write ping on ws")
 				return
@@ -187,16 +198,14 @@ func (ws *WSConnection) connectionRouter(logger *log.Logger) {
 	for {
 		select {
 		case <-ws.Done:
-			// This context gets canceled when the parent context is canceled passed into NewWSConnection func
-			// or when connectionReader function returns
-			// this is the only return point for the router routine
+			// This channel is closed when the connectionReader returns
 			logger.Println("router returns because ws connection closed")
 			return
 		case apiKey := <-ws.removeClient:
 			// deleting client's API key from clients map on request of WSClient variable
-			ws.clLock.Lock()
+			ws.clientsMu.Lock()
 			delete(ws.clients, apiKey)
-			ws.clLock.Unlock()
+			ws.clientsMu.Unlock()
 		case msg := <-ws.chRead:
 
 			// msg format for multiplexed websocket message
@@ -218,15 +227,12 @@ func (ws *WSConnection) connectionRouter(logger *log.Logger) {
 			}
 
 			// determining WSClient variable for apiKey
-			ws.clLock.RLock()
+			ws.clientsMu.RLock()
 			wsCl, ok := ws.clients[apiKey]
-			ws.clLock.RUnlock()
+			ws.clientsMu.RUnlock()
 
 			// if apiKey is not found, unknown connection will be unsubscribed
 			if !ok {
-
-				//TODO: LET'S NOT DO THIS
-				// We need to be sure that the integrity is protected and the client is unsubscribed already
 				msgType := message[0].(float64)
 				//
 				//// check message type, 2 is for Unsubscribing connection
@@ -260,6 +266,7 @@ func (ws *WSConnection) connectionRouter(logger *log.Logger) {
 	}
 }
 
+// Dials a websocket connection to the specified URL.
 func connect(ctx context.Context, host string) (*websocket.Conn, error) {
 	u := url.URL{Scheme: "wss", Host: host, Path: "/realtimemd"}
 	dialer := websocket.DefaultDialer

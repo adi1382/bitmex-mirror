@@ -11,17 +11,23 @@ import (
 )
 
 func (c *RestClient) request(req Requester, results interface{}) error {
+	// This acquires a *fastHTTP.Response which needs to be released after reusing
 	res, err := c.do(req)
 
+	// Release acquired *fastHTTP.Response at return
 	defer fasthttp.ReleaseResponse(res)
 
+	// Request failed
 	if err != nil {
 		return err
 	}
 
+	// If request failed with non-200 status code then return error or update the value of "results"
 	if err := decode(res, results); err != nil {
 		return err
 	}
+
+	// Return nil if everything went fine
 	return nil
 }
 

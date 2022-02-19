@@ -1,5 +1,14 @@
 package bitmex
 
+import (
+	"context"
+	"fmt"
+	"github.com/bitmex-mirror/auth"
+	"github.com/bitmex-mirror/optional"
+	"testing"
+	"time"
+)
+
 //
 //import (
 //	"context"
@@ -10,73 +19,88 @@ package bitmex
 //	"github.com/bitmex-mirror/auth"
 //)
 //
-////func BenchmarkOpt(b *testing.B) {
-////	c := RestClient{}
-////
-////	for n := 0; n < b.N; n++ {
-////		_, err := c.AmendOrderRequest().OrderID("DF").OrderQty(123).payload()
-////		if err != nil {
-////			b.Fail()
-////		}
-////	}
-////}
+//func BenchmarkOpt(b *testing.B) {
+//	c := RestClient{}
 //
-//func TestClient_GetOrdersRequest(t *testing.T) {
-//
-//	//r := ReqToGetOrders{
-//	//	Symbol:    "",
-//	//	Filter:    nil,
-//	//	Columns:   "",
-//	//	Count:     0,
-//	//	Start:     0,
-//	//	Reverse:   nil,
-//	//	StartTime: nil,
-//	//	EndTime:   nil,
-//	//}
-//	//k, _ := json.Marshal(r)
-//	//fmt.Println(string(k))
-//	//
-//	//return
-//
-//	b := NewBitmex(true)
-//	c := b.NewRestClient(auth.NewConfig("YXTfYOwQn0e7gq3bziPyeNDa", "6tbsbjU1GjCGipthTHuLb2PrVswCuGBrA10JQ5IrhlGy0Ytz"))
-//	c.httpC.MaxIdleConnDuration = time.Second * 150
-//
-//	resp, err := c.GetOrders(context.Background(), ReqToGetOrders{})
-//
-//	fmt.Println(resp, err)
-//
-//	//for i := 0; i < 60; i++ {
-//	//	_, err := c.GetOrdersRequest().Symbol("XBTUSD").Filter(map[string]interface{}{"open": true}).Do()
-//	//	if err != nil {
-//	//		t.Error(err)
-//	//	}
-//	//}
-//
-//	//startTime := time.Now().UnixNano()
-//	//_, _ = c.GetOrdersRequest().Symbol("XBTUSD").Filter(map[string]interface{}{"open": true}).Do()
-//	//fmt.Println("Total Time: ", time.Now().UnixNano()-startTime)
-//
-//	fmt.Println("**********************************************")
-//
-//	//time.Sleep(time.Second*10)
-//	//
-//	//startTime = time.Now().UnixNano()
-//	//_, _ = c.GetOrdersRequest().Symbol("XBTUSD").Filter(map[string]interface{}{"open": true}).Do()
-//	//fmt.Println("Total Time: ", time.Now().UnixNano()-startTime)
-//	//
-//	//fmt.Println("**********************************************")
-//	//
-//	//
-//	//
-//	//time.Sleep(time.Second*180)
-//	//
-//	//startTime = time.Now().UnixNano()
-//	//_, _ = c.GetOrdersRequest().Symbol("XBTUSD").Filter(map[string]interface{}{"open": true}).Do()
-//	//fmt.Println("Total Time: ", time.Now().UnixNano()-startTime)
-//
-//	//fmt.Println(do)
+//	for n := 0; n < b.N; n++ {
+//		_, err := c.AmendOrderRequest().OrderID("DF").OrderQty(123).payload()
+//		if err != nil {
+//			b.Fail()
+//		}
+//	}
 //}
+//
+func TestClient_GetOrdersRequest(t *testing.T) {
+	//r := ReqToGetOrders{
+	//	Symbol:    "",
+	//	Filter:    nil,
+	//	Columns:   "",
+	//	Count:     0,
+	//	Start:     0,
+	//	Reverse:   nil,
+	//	StartTime: nil,
+	//	EndTime:   nil,
+	//}
+	//k, _ := json.Marshal(r)
+	//fmt.Println(string(k))
+	//
+	//return
+
+	b := NewBitmex(true)
+	c := b.NewRestClient(auth.NewConfig("YXTfYOwQn0e7gq3bziPyeNDa", "6tbsbjU1GjCGipthTHuLb2PrVswCuGBrA10JQ5IrhlGy0Ytz"))
+	c.httpC.MaxIdleConnDuration = time.Second * 150
+
+	resp, err := c.GetOrders(context.Background(), ReqToGetOrders{
+		Symbol:    "",
+		Filter:    nil,
+		Columns:   "",
+		Count:     3,
+		Start:     0,
+		Reverse:   optional.OfBool(true),
+		StartTime: optional.Time{},
+		EndTime:   optional.Time{},
+	})
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	for _, v := range resp {
+		fmt.Printf("%+v\n", v)
+	}
+
+	//for i := 0; i < 60; i++ {
+	//	_, err := c.GetOrdersRequest().Symbol("XBTUSD").Filter(map[string]interface{}{"open": true}).Do()
+	//	if err != nil {
+	//		t.Error(err)
+	//	}
+	//}
+
+	//startTime := time.Now().UnixNano()
+	//_, _ = c.GetOrdersRequest().Symbol("XBTUSD").Filter(map[string]interface{}{"open": true}).Do()
+	//fmt.Println("Total Time: ", time.Now().UnixNano()-startTime)
+
+	fmt.Println("**********************************************")
+
+	//time.Sleep(time.Second*10)
+	//
+	//startTime = time.Now().UnixNano()
+	//_, _ = c.GetOrdersRequest().Symbol("XBTUSD").Filter(map[string]interface{}{"open": true}).Do()
+	//fmt.Println("Total Time: ", time.Now().UnixNano()-startTime)
+	//
+	//fmt.Println("**********************************************")
+	//
+	//
+	//
+	//time.Sleep(time.Second*180)
+	//
+	//startTime = time.Now().UnixNano()
+	//_, _ = c.GetOrdersRequest().Symbol("XBTUSD").Filter(map[string]interface{}{"open": true}).Do()
+	//fmt.Println("Total Time: ", time.Now().UnixNano()-startTime)
+
+	//fmt.Println(do)
+}
+
 //
 ////
 ////func TestClient_PlaceBulkOrdersRequest(t *testing.T) {

@@ -1,155 +1,140 @@
 package bitmex
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/sync/errgroup"
-	"log"
-	"math/rand"
-	"os"
-	"sync"
 	"testing"
-	"time"
 
-	"github.com/bitmex-mirror/auth"
 	"github.com/pkg/errors"
 )
 
-func TestErrorGrp(t *testing.T) {
-	g, _ := errgroup.WithContext(context.Background())
+//func TestBitmex_NewWSConnection2(t *testing.T) {
+//	logger := log.New(os.Stdout, "", log.Ldate|log.Lmicroseconds|log.LUTC|log.Lshortfile)
+//	b := NewBitmex(true)
+//	conn, err := b.NewWSConnection(context.Background(), logger)
+//	if err != nil {
+//		panic(err)
+//	}
+//	config := auth.NewConfig("YXTfYOwQn0e7gq3bziPyeNDa", "6tbsbjU1GjCGipthTHuLb2PrVswCuGBrA10JQ5IrhlGy0Ytz")
+//	client, err := conn.SubscribeNewClient(context.Background(), config, "", logger, config.Key)
+//	if err != nil {
+//		panic(err)
+//	}
+//	client.Connect()
+//
+//	go func() {
+//		for i := range client.Receiver {
+//			logger.Println("Descpacito: ", string(i))
+//		}
+//	}()
+//
+//	if err = client.Authenticate(context.Background()); err != nil {
+//		panic(err)
+//	}
+//
+//	start := time.Now()
+//	err = client.SubscribeTables(context.Background(), "position", "margin", "order")
+//	if err != nil {
+//		panic(err)
+//	}
+//	elapsed := time.Since(start)
+//	logger.Println("Tiempo 2: ", elapsed)
+//
+//	//if err = client.Authenticate(context.Background()); err != nil {
+//	//	panic(err)
+//	//}
+//	//
+//	//err = client.SubscribeTables(context.Background(), "margin", "order", "position")
+//	//if err != nil {
+//	//	panic(err)
+//	//}
+//	//fmt.Println("Got here")
+//
+//	select {}
+//}
 
-	for i := 0; i < 10; i++ {
-		i := i
-		g.Go(func() error {
-			fmt.Printf("%d\n", i)
-			return nil
-		})
-	}
-	err := g.Wait()
-	fmt.Println(err)
-}
-
-func TestErrorGrp1(t *testing.T) {
-
-	for i := 0; i < 10; i++ {
-		i := i
-		go func() {
-			time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
-			fmt.Printf("%d\n", i)
-			return
-		}()
-	}
-
-	select {}
-}
-
-func TestBitmex_NewWSConnection2(t *testing.T) {
-	logger := log.New(os.Stdout, "", log.Ldate|log.Lmicroseconds|log.LUTC|log.Lshortfile)
-	b := NewBitmex(true)
-	conn, err := b.NewWSConnection(context.Background(), logger)
-	if err != nil {
-		panic(err)
-	}
-	config := auth.NewConfig("YXTfYOwQn0e7gq3bziPyeNDa", "6tbsbjU1GjCGipthTHuLb2PrVswCuGBrA10JQ5IrhlGy0Ytz")
-	client, err := conn.NewWSClient(context.Background(), config, "", logger)
-	if err != nil {
-		panic(err)
-	}
-	client.Connect()
-
-	go func() {
-		for i := range client.Receiver {
-			logger.Println("Descpacito: ", string(i))
-		}
-	}()
-
-	if err = client.Authenticate(context.Background()); err != nil {
-		panic(err)
-	}
-
-	start := time.Now()
-	err = client.SubscribeTables(context.Background(), "position", "margin", "order")
-	if err != nil {
-		panic(err)
-	}
-	elapsed := time.Since(start)
-	logger.Println("Tiempo 2: ", elapsed)
-
-	//if err = client.Authenticate(context.Background()); err != nil {
-	//	panic(err)
-	//}
-	//
-	//err = client.SubscribeTables(context.Background(), "margin", "order", "position")
-	//if err != nil {
-	//	panic(err)
-	//}
-	//fmt.Println("Got here")
-
-	select {}
-}
-
-func TestBitmex_NewWSConnection(t *testing.T) {
-	logger := log.New(os.Stdout, "", log.Ldate|log.Lmicroseconds|log.LUTC|log.Lshortfile)
-	b := NewBitmex(true)
-	conn, err := b.NewWSConnection(context.Background(), logger)
-	if err != nil {
-		panic(err)
-	}
-	config := auth.NewConfig("YXTfYOwQn0e7gq3bziPyeNDa", "6tbsbjU1GjCGipthTHuLb2PrVswCuGBrA10JQ5IrhlGy0Ytz")
-	client, err := conn.NewWSClient(context.Background(), config, "", logger)
-	if err != nil {
-		panic(err)
-	}
-	client.Connect()
-
-	go func() {
-		for i := range client.Receiver {
-			logger.Println("Descpacito: ", string(i))
-		}
-	}()
-
-	var wg sync.WaitGroup
-	wg.Add(50)
-
-	for i := 0; i < 50; i++ {
-		go func() {
-			defer wg.Done()
-			if err = client.Authenticate(context.Background()); err != nil {
-				panic(err)
-			}
-			//fmt.Println("k")
-		}()
-	}
-
-	wg.Wait()
-	select {}
-	return
-
-	if err = client.Authenticate(context.Background()); err != nil {
-		panic(err)
-	}
-
-	start := time.Now()
-	err = client.SubscribeTables(context.Background(), "margin", "order", "position")
-	if err != nil {
-		panic(err)
-	}
-	elapsed := time.Since(start)
-	logger.Println("Tiempo 1: ", elapsed)
-
-	//if err = client.Authenticate(context.Background()); err != nil {
-	//	panic(err)
-	//}
-	//
-	//err = client.SubscribeTables(context.Background(), "margin", "order", "position")
-	//if err != nil {
-	//	panic(err)
-	//}
-	//fmt.Println("Got here")
-
-	select {}
-}
+//func TestBitmex_NewWSConnection(t *testing.T) {
+//	logger := log.New(os.Stdout, "", log.Ldate|log.Lmicroseconds|log.LUTC|log.Lshortfile)
+//	b := NewBitmex(true)
+//	conn, err := b.NewWSConnection(context.Background(), logger)
+//	if err != nil {
+//		panic(err)
+//	}
+//	config := auth.NewConfig("YXTfYOwQn0e7gq3bziPyeNDa", "6tbsbjU1GjCGipthTHuLb2PrVswCuGBrA10JQ5IrhlGy0Ytz")
+//	client, err := conn.SubscribeNewClient(context.Background(), config, "", logger, config.Key)
+//	if err != nil {
+//		panic(err)
+//	}
+//	client.Connect()
+//
+//	go func() {
+//		for i := range client.Receiver {
+//			logger.Println("Descpacito: ", string(i))
+//		}
+//	}()
+//
+//	//var wg sync.WaitGroup
+//	//wg.Add(50)
+//	//
+//	//for i := 0; i < 50; i++ {
+//	//	go func() {
+//	//		defer wg.Done()
+//	//		if err = client.Authenticate(context.Background()); err != nil {
+//	//			panic(err)
+//	//		}
+//	//		//fmt.Println("k")
+//	//	}()
+//	//}
+//	//
+//	//wg.Wait()
+//	//fmt.Println("Done")
+//	//select {}
+//	//return
+//
+//	if err = client.Authenticate(context.Background()); err != nil {
+//		panic(err)
+//	}
+//
+//	select {}
+//
+//	err = client.SubscribeTableWithPartials(context.Background(), WSTableOrder)
+//	if err != nil {
+//		panic(err)
+//	}
+//
+//	client.Unsubscribe()
+//	fmt.Println("got here")
+//	select {}
+//	return
+//
+//	//var wg sync.WaitGroup
+//	//wg.Add(3)
+//	//go func() {
+//	//	defer wg.Done()
+//	//}()
+//	//go func() {
+//	//	defer wg.Done()
+//	//	a.subscribeTable(ctx, logger, bitmex.WSTablePosition)
+//	//}()
+//	//go func() {
+//	//	defer wg.Done()
+//	//	a.subscribeTable(ctx, logger, bitmex.WSTableMargin)
+//	//}()
+//	//
+//	//wg.Wait()
+//
+//	//if err = client.Authenticate(context.Background()); err != nil {
+//	//	panic(err)
+//	//}
+//	//
+//	//err = client.SubscribeTables(context.Background(), "margin", "order", "position")
+//	//if err != nil {
+//	//	panic(err)
+//	//}
+//	//fmt.Println("Got here")
+//
+//	select {}
+//}
 
 func TestRateLimited(t *testing.T) {
 	jsonStr := `{"status":429,"error":"Rate limit exceeded, retry in 1 seconds.","meta":{"retryAfter":1},"request":{"op":"subscribe","args":"orderBookL2_25"}}`
@@ -237,13 +222,13 @@ func wsError(data []byte) error {
 //	//
 //	//for i := range con {
 //	//	go func() {
-//	//		_, _ = ws.NewWSClient(context.Background(), con[i], "", logger)
+//	//		_, _ = ws.SubscribeNewClient(context.Background(), con[i], "", logger)
 //	//	}()
 //	//}
 //	//
 //	//time.Sleep(time.Second * 100)
 //	//return
-//	c, r := ws.NewWSClient(context.Background(), config, "", logger)
+//	c, r := ws.SubscribeNewClient(context.Background(), config, "", logger)
 //
 //	go func() {
 //		for {
@@ -352,7 +337,7 @@ func wsError(data []byte) error {
 //	////	}
 //	////	//time.Sleep(time.Second * 30)
 //	////	//logger.Println("Stopping now")
-//	////	//c.UnsubscribeConnection()
+//	////	//c.Unsubscribe()
 //	////}()
 //	//
 //	////logger.Println("sending auth")

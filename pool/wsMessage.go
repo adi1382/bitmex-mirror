@@ -1,7 +1,7 @@
 package pool
 
 //type Order struct {
-//	Account               int64            `json:"account"`
+//	Account               int64            `json:"Account"`
 //	AvgPx                 optional.Float64 `json:"avgPx"`
 //	ClOrdID               optional.String  `json:"clOrdID"`
 //	ClOrdLinkID           optional.String  `json:"clOrdLinkID"`
@@ -37,7 +37,7 @@ package pool
 //}
 //
 //type Position struct {
-//	Account              int64            `json:"account"`
+//	Account              int64            `json:"Account"`
 //	AvgCostPrice         optional.Float64 `json:"avgCostPrice"`
 //	AvgEntryPrice        optional.Float64 `json:"avgEntryPrice"`
 //	BankruptPrice        optional.Float64 `json:"bankruptPrice"`
@@ -131,7 +131,7 @@ package pool
 //}
 //
 //type Margin struct {
-//	Account            int64            `json:"account"`
+//	Account            int64            `json:"Account"`
 //	Action             optional.String  `json:"action"`
 //	Amount             optional.Float64 `json:"amount"`
 //	AvailableMargin    optional.Float64 `json:"availableMargin"`

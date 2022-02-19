@@ -11,7 +11,7 @@ type Config struct {
 	secret string // secret is unexported and is only meant to be used for generating signature
 }
 
-// NewConfig returns new Config variable and provides a method to Sign
+// NewConfig returns new Config variable which provides a method to Sign
 func NewConfig(key, secret string) Config {
 	config := Config{
 		Key:    key,

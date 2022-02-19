@@ -4,70 +4,66 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="49da39b7-0b12-4d57-9177-87db4699a4db" name="Changes" comment="bitmex rest, websocket">
-      <change afterPath="$PROJECT_DIR$/bitmex/margin.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/optional/bool_generated.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/optional/float64_generated.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/optional/int64_generated.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/optional/optional_test.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/optional/string_generated.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/optional/time_generated.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pool/account.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pool/hostAccount.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pool/pool.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pool/pool_test.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pool/rest.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pool/subAccount.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pool/wsHandler.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pool/wsMessage.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/vendor/golang.org/x/sync/AUTHORS" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/vendor/golang.org/x/sync/CONTRIBUTORS" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/vendor/golang.org/x/sync/LICENSE" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/vendor/golang.org/x/sync/PATENTS" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/vendor/golang.org/x/sync/errgroup/errgroup.go" afterDir="false" />
+    <list default="true" id="49da39b7-0b12-4d57-9177-87db4699a4db" name="Changes" comment="account, pool">
+      <change afterPath="$PROJECT_DIR$/mirror/calibrate.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mirror/fpe_test.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mirror/handler.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mirror/mem.pprof" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mirror/mirror.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mirror/mirror_test.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mirror/trace.out" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/optional/bool.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/optional/float64.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/optional/int64.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/optional/string.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/optional/template/optional.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/optional/time.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/optional/types.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pool/cpu.pprof" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pool/goroutine.pprof" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pool/mem.pprof" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pool/pubSub.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pool/pusSub_test.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pool/rate_test.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pool/trace.out" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/capitalone/fpe/LICENSE" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/capitalone/fpe/ff3/ff3.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/pkg/profile/.travis.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/pkg/profile/AUTHORS" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/pkg/profile/LICENSE" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/pkg/profile/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/pkg/profile/profile.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/auth/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/auth/auth.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bitmex/bitmex.go" beforeDir="false" afterPath="$PROJECT_DIR$/bitmex/bitmex.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bitmex/errors.go" beforeDir="false" afterPath="$PROJECT_DIR$/bitmex/errors.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bitmex/instrument.go" beforeDir="false" afterPath="$PROJECT_DIR$/bitmex/instrument.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bitmex/order.go" beforeDir="false" afterPath="$PROJECT_DIR$/bitmex/order.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bitmex/order_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/bitmex/order_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bitmex/position.go" beforeDir="false" afterPath="$PROJECT_DIR$/bitmex/position.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bitmex/request.go" beforeDir="false" afterPath="$PROJECT_DIR$/bitmex/request.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bitmex/restClient.go" beforeDir="false" afterPath="$PROJECT_DIR$/bitmex/restClient.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bitmex/websocket.go" beforeDir="false" afterPath="$PROJECT_DIR$/bitmex/websocket.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bitmex/wsClient.go" beforeDir="false" afterPath="$PROJECT_DIR$/bitmex/wsClient.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bitmex/ws_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/bitmex/ws_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/.godocdown.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/.travis.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/LICENSE" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/Makefile" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/bool_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/byte_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/complex128_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/complex64_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/doc.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/float32_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/float64_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/int16_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/int32_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/int64_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/int8_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/int_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/rune_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/string_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/time_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/types.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/uint16_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/uint32_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/uint64_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/uint8_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/uint_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/4d63.com/optional/uintptr_generated.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/gorilla/websocket/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/github.com/gorilla/websocket/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/optional/bool_generated.go" beforeDir="false" afterPath="$PROJECT_DIR$/optional/bool_generated.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/optional/float64_generated.go" beforeDir="false" afterPath="$PROJECT_DIR$/optional/float64_generated.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/optional/int64_generated.go" beforeDir="false" afterPath="$PROJECT_DIR$/optional/int64_generated.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/optional/optional_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/optional/optional_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/optional/string_generated.go" beforeDir="false" afterPath="$PROJECT_DIR$/optional/string_generated.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/optional/time_generated.go" beforeDir="false" afterPath="$PROJECT_DIR$/optional/time_generated.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pool/account.go" beforeDir="false" afterPath="$PROJECT_DIR$/pool/account.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pool/hostAccount.go" beforeDir="false" afterPath="$PROJECT_DIR$/pool/hostAccount.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pool/pool.go" beforeDir="false" afterPath="$PROJECT_DIR$/pool/pool.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pool/pool_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/pool/pool_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pool/rest.go" beforeDir="false" afterPath="$PROJECT_DIR$/pool/rest.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pool/subAccount.go" beforeDir="false" afterPath="$PROJECT_DIR$/pool/subAccount.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pool/wsHandler.go" beforeDir="false" afterPath="$PROJECT_DIR$/pool/wsHandler.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pool/wsMessage.go" beforeDir="false" afterPath="$PROJECT_DIR$/pool/wsMessage.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vendor/golang.org/x/sync/AUTHORS" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/vendor/golang.org/x/sync/CONTRIBUTORS" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/vendor/golang.org/x/sync/LICENSE" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/vendor/golang.org/x/sync/PATENTS" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/vendor/golang.org/x/sync/errgroup/errgroup.go" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/vendor/modules.txt" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/modules.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -82,7 +78,7 @@
       </list>
     </option>
   </component>
-  <component name="GOROOT" url="file:///opt/homebrew/Cellar/go/1.17.2/libexec" />
+  <component name="GOROOT" url="file:///opt/homebrew/Cellar/go/1.17.6/libexec" />
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
@@ -97,10 +93,8 @@
   <component name="GoLibraries">
     <option name="indexEntireGoPath" value="false" />
   </component>
-  <component name="HighlightingSettingsPerFile">
-    <setting file="file:///opt/homebrew/Cellar/go/1.17.2/libexec/src/time/sleep.go" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file:///opt/homebrew/Cellar/go/1.17.2/libexec/src/runtime/proc.go" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file:///opt/homebrew/Cellar/go/1.17.2/libexec/src/context/context.go" root0="FORCE_HIGHLIGHTING" />
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
   </component>
   <component name="NamedScopeManager">
     <scope name="WSMessage" pattern="file:mirror/wsMessage.go" />
@@ -121,11 +115,13 @@
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="configurable..is.expanded" value="false" />
     <property name="configurable.GoLibrariesConfigurable.is.expanded" value="true" />
+    <property name="go.format.on.save.advertiser.fired" value="true" />
     <property name="go.formatter.settings.were.checked" value="true" />
     <property name="go.import.settings.migrated" value="true" />
     <property name="go.modules.go.list.on.any.changes.was.set" value="true" />
     <property name="go.sdk.automatically.set" value="true" />
     <property name="go.vendoring.notification.had.been.shown" value="true" />
+    <property name="go.watchers.conflict.with.on.save.actions.check.performed" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/optional" />
     <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
     <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
@@ -145,16 +141,28 @@
     </key>
   </component>
   <component name="RunManager" selected="Go Test.TestNewPool in github.com/bitmex-mirror/pool">
-    <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <configuration name="go build github.com/bitmex-mirror" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
       <module name="bitmex-mirror" />
       <working_directory value="$PROJECT_DIR$" />
-      <go_parameters value="-i" />
-      <kind value="FILE" />
+      <kind value="PACKAGE" />
+      <package value="github.com/bitmex-mirror" />
       <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$/main.go" />
       <method v="2" />
     </configuration>
-    <configuration name="TestBitmex_NewWSConnection in github.com/bitmex-mirror/bitmex" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="BenchmarkFPE in github.com/bitmex-mirror/mirror" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="bitmex-mirror" />
+      <working_directory value="$PROJECT_DIR$/mirror" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/bitmex-mirror/mirror" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gobench" />
+      <pattern value="^\QBenchmarkFPE\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestClient_GetOrdersRequest in github.com/bitmex-mirror/bitmex" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="bitmex-mirror" />
       <working_directory value="$PROJECT_DIR$/bitmex" />
       <root_directory value="$PROJECT_DIR$" />
@@ -163,43 +171,19 @@
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestBitmex_NewWSConnection\E$" />
+      <pattern value="^\QTestClient_GetOrdersRequest\E$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestBitmex_NewWSConnection2 in github.com/bitmex-mirror/bitmex" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestFPE in github.com/bitmex-mirror/mirror" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="bitmex-mirror" />
-      <working_directory value="$PROJECT_DIR$/bitmex" />
+      <working_directory value="$PROJECT_DIR$/mirror" />
       <root_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
-      <package value="github.com/bitmex-mirror/bitmex" />
+      <package value="github.com/bitmex-mirror/mirror" />
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestBitmex_NewWSConnection2\E$" />
-      <method v="2" />
-    </configuration>
-    <configuration name="TestErrorGrp in github.com/bitmex-mirror/bitmex" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="bitmex-mirror" />
-      <working_directory value="$PROJECT_DIR$/bitmex" />
-      <root_directory value="$PROJECT_DIR$" />
-      <kind value="PACKAGE" />
-      <package value="github.com/bitmex-mirror/bitmex" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
-      <framework value="gotest" />
-      <pattern value="^\QTestErrorGrp\E$" />
-      <method v="2" />
-    </configuration>
-    <configuration name="TestErrorGrp1 in github.com/bitmex-mirror/bitmex" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="bitmex-mirror" />
-      <working_directory value="$PROJECT_DIR$/bitmex" />
-      <root_directory value="$PROJECT_DIR$" />
-      <kind value="PACKAGE" />
-      <package value="github.com/bitmex-mirror/bitmex" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
-      <framework value="gotest" />
-      <pattern value="^\QTestErrorGrp1\E$" />
+      <pattern value="^\QTestFPE\E$" />
       <method v="2" />
     </configuration>
     <configuration name="TestNewPool in github.com/bitmex-mirror/pool" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
@@ -212,16 +196,6 @@
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
       <pattern value="^\QTestNewPool\E$" />
-      <method v="2" />
-    </configuration>
-    <configuration default="true" type="GoTestRunConfiguration" factoryName="Go Test">
-      <module name="bitmex-mirror" />
-      <working_directory value="$PROJECT_DIR$" />
-      <go_parameters value="-i" />
-      <kind value="DIRECTORY" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
-      <framework value="gotest" />
       <method v="2" />
     </configuration>
     <configuration default="true" type="SwaggerCodegen">
@@ -243,10 +217,10 @@
     <recent_temporary>
       <list>
         <item itemvalue="Go Test.TestNewPool in github.com/bitmex-mirror/pool" />
-        <item itemvalue="Go Test.TestBitmex_NewWSConnection in github.com/bitmex-mirror/bitmex" />
-        <item itemvalue="Go Test.TestBitmex_NewWSConnection2 in github.com/bitmex-mirror/bitmex" />
-        <item itemvalue="Go Test.TestErrorGrp in github.com/bitmex-mirror/bitmex" />
-        <item itemvalue="Go Test.TestErrorGrp1 in github.com/bitmex-mirror/bitmex" />
+        <item itemvalue="Go Build.go build github.com/bitmex-mirror" />
+        <item itemvalue="Go Test.BenchmarkFPE in github.com/bitmex-mirror/mirror" />
+        <item itemvalue="Go Test.TestFPE in github.com/bitmex-mirror/mirror" />
+        <item itemvalue="Go Test.TestClient_GetOrdersRequest in github.com/bitmex-mirror/bitmex" />
       </list>
     </recent_temporary>
   </component>
@@ -264,7 +238,6 @@
         </entry>
       </map>
     </option>
-    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VcsManagerConfiguration">
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
@@ -277,7 +250,8 @@
     <MESSAGE value="position, instrument" />
     <MESSAGE value="bitmex pkg complete" />
     <MESSAGE value="bitmex rest, websocket" />
-    <option name="LAST_COMMIT_MESSAGE" value="bitmex rest, websocket" />
+    <MESSAGE value="account, pool" />
+    <option name="LAST_COMMIT_MESSAGE" value="account, pool" />
   </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>

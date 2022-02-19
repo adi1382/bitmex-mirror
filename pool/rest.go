@@ -7,12 +7,14 @@ import (
 	"github.com/bitmex-mirror/optional"
 )
 
+//TODO: PREVENT IF THE ACCOUNT IS CLOSED
+
 // PlaceOrder places an order and updates the state of activeOrders and positions accordingly.
-func (a *account) PlaceOrder(ctx context.Context, req bitmex.ReqToPlaceOrder) error {
+func (a *Account) PlaceOrder(ctx context.Context, req bitmex.ReqToPlaceOrder) error {
 	a.ordersMu.Lock()
 	defer a.ordersMu.Unlock()
 	a.positionsMu.Lock()
-	defer a.ordersMu.Unlock()
+	defer a.positionsMu.Unlock()
 
 	orderRes, err := a.restClient.PlaceOrder(ctx, req)
 	if err != nil {
@@ -71,7 +73,7 @@ func (a *account) PlaceOrder(ctx context.Context, req bitmex.ReqToPlaceOrder) er
 	return nil
 }
 
-func (a *account) AmendOrder(ctx context.Context, req bitmex.ReqToAmendOrder) error {
+func (a *Account) AmendOrder(ctx context.Context, req bitmex.ReqToAmendOrder) error {
 	a.ordersMu.Lock()
 	defer a.ordersMu.Unlock()
 	a.positionsMu.Lock()
@@ -163,7 +165,7 @@ func (a *account) AmendOrder(ctx context.Context, req bitmex.ReqToAmendOrder) er
 	return nil
 }
 
-func (a *account) CancelOrders(ctx context.Context, req bitmex.ReqToCancelOrders) error {
+func (a *Account) CancelOrders(ctx context.Context, req bitmex.ReqToCancelOrders) error {
 	a.ordersMu.Lock()
 	defer a.ordersMu.Unlock()
 
@@ -190,7 +192,7 @@ func (a *account) CancelOrders(ctx context.Context, req bitmex.ReqToCancelOrders
 	return nil
 }
 
-func (a *account) CancelAllOrders(ctx context.Context, req bitmex.ReqToCancelAllOrders) error {
+func (a *Account) CancelAllOrders(ctx context.Context, req bitmex.ReqToCancelAllOrders) error {
 	a.ordersMu.Lock()
 	defer a.ordersMu.Unlock()
 
@@ -217,7 +219,7 @@ func (a *account) CancelAllOrders(ctx context.Context, req bitmex.ReqToCancelAll
 	return nil
 }
 
-func (a *account) ChangeLeverage(ctx context.Context, req bitmex.ReqToChangeLeverage) error {
+func (a *Account) ChangeLeverage(ctx context.Context, req bitmex.ReqToChangeLeverage) error {
 	a.positionsMu.Lock()
 	defer a.positionsMu.Unlock()
 
@@ -241,7 +243,7 @@ func (a *account) ChangeLeverage(ctx context.Context, req bitmex.ReqToChangeLeve
 	return nil
 }
 
-func (a *account) IsolateMargin(ctx context.Context, req bitmex.ReqToIsolateMargin) error {
+func (a *Account) IsolateMargin(ctx context.Context, req bitmex.ReqToIsolateMargin) error {
 	a.positionsMu.Lock()
 	defer a.positionsMu.Unlock()
 
@@ -265,7 +267,7 @@ func (a *account) IsolateMargin(ctx context.Context, req bitmex.ReqToIsolateMarg
 	return nil
 }
 
-func (a *account) ChangeRiskLimit(ctx context.Context, req bitmex.ReqToChangeRiskLimit) error {
+func (a *Account) ChangeRiskLimit(ctx context.Context, req bitmex.ReqToChangeRiskLimit) error {
 	a.positionsMu.Lock()
 	defer a.positionsMu.Unlock()
 
@@ -289,7 +291,7 @@ func (a *account) ChangeRiskLimit(ctx context.Context, req bitmex.ReqToChangeRis
 	return nil
 }
 
-func (a *account) TransferMargin(ctx context.Context, req bitmex.ReqToTransferMargin) error {
+func (a *Account) TransferMargin(ctx context.Context, req bitmex.ReqToTransferMargin) error {
 	a.positionsMu.Lock()
 	defer a.positionsMu.Unlock()
 

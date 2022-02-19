@@ -19,7 +19,8 @@ const ErrInvalidAPIKey = Error("invalid API key")
 const ErrTooManyRequests = Error("too many requests")
 const ErrWSConnClosed = Error("websocket connection closed")
 const ErrWSClientClosed = Error("websocket client closed")
-const ErrWSVerificationTimeout = Error("context canceled/timeout: message sent but could not verify")
+const ErrContextCanceled = Error("context canceled")
+const ErrWSVerificationTimeout = Error("verification timeout: message sent but could not verify")
 const ErrUnexpectedError = Error("unexpected error")
 const ErrRequestExpired = Error("request expired")
 const ErrClientError = Error("client error (400<=code<500)")
@@ -27,6 +28,7 @@ const ErrServerError = Error("client error (500<=code<600)")
 
 const requestTimeout = time.Second * 10              // Used to create API Expires
 const wsConfirmTimeout = time.Second * 15            // time to wait for confirmation message on websocket send
+const wsWriteTimeout = time.Second * 10              // time to wait for write to websocket
 const restEndpoint = "www.bitmex.com/api/v1"         // rest endpoint for mainnet
 const restTestEndpoint = "testnet.bitmex.com/api/v1" // rest endpoint for testnet
 const wsEndpoint = "ws.bitmex.com"                   // websocket endpoint for mainnet
@@ -50,8 +52,28 @@ const OrderTypeLimit = "Limit"
 const OrderTypeMarket = "Market"
 const OrderTypeStop = "Stop"
 const OrderTypeStopLimit = "StopLimit"
-const OrderTypeStopMarket = "StopMarket"
-const OrderTypeTrailingStop = "TrailingStop"
+const OrderTypeMarketIfTouched = "MarketIfTouched"
+const OrderTypeLimitIfTouched = "LimitIfTouched"
+const OrderTypePegged = "Pegged"
+
+const TIFGoodTillCancel = "GoodTillCancel"
+const TIFImmediateOrCancel = "ImmediateOrCancel"
+const TIFFillOrKill = "FillOrKill"
+
+const ExecInstParticipateDoNotInitiate = "ParticipateDoNotInitiate"
+const ExecInstAllOrNone = "AllOrNone"
+const ExecInstMarkPrice = "MarkPrice"
+const ExecInstIndexPrice = "IndexPrice"
+const ExecInstLastPrice = "LastPrice"
+const ExecInstClose = "Close"
+const ExecInstReduceOnly = "ReduceOnly"
+const ExecInstFixed = "Fixed"
+
+const PegPriceTypeLastPeg = "LastPeg"
+const PegPriceTypeMidPricePeg = "MidPricePeg"
+const PegPriceTypeMarketPeg = "MarketPeg"
+const PegPriceTypePrimaryPeg = "PrimaryPeg"
+const PegPriceTypeTrailingStopPeg = "TrailingStopPeg"
 
 const WSDataActionPartial = "partial"
 const WSDataActionUpdate = "update"

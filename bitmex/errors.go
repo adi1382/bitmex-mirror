@@ -3,6 +3,7 @@ package bitmex
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 )
 
 type APIError struct {
@@ -30,6 +31,6 @@ func (e *APIError) UnmarshalJSON(data []byte) error {
 }
 
 func IsAPIError(err error) bool {
-	_, ok := err.(APIError)
+	_, ok := errors.Cause(err).(APIError)
 	return ok
 }
